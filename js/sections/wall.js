@@ -240,45 +240,65 @@ function createMarquee(tracks, wall) {
     return { r, enter, leave };
   });
 
-  // Drag to scroll — grab a row and scrub it.
-  let active = null;
+  // Drag to scroll — grab a row and scrub it. A plain click must still reach the
+  // tile so the lightbox / link fires, so we deliberately do NOT capture the
+  // pointer or mark the row "dragging" on pointerdown: capturing on press
+  // retargets the click that follows to the wall (where closest("a.tile") is
+  // null), which silently eats every tile click. Instead a press stays "pending"
+  // until the pointer actually travels past DRAG_THRESHOLD, and only then is it
+  // promoted to a real drag (capture + scrub + swallow the trailing click).
+  const DRAG_THRESHOLD = 6; // px of travel before a press becomes a drag
+  let pending = null; // row pressed but not yet dragging
+  let active = null; // row currently being dragged
   let startX = 0;
   let startOffset = 0;
-  let moved = 0;
   let pid = null;
+  let didDrag = false;
 
   const onDown = (e) => {
     if (e.button != null && e.button > 0) return; // primary / touch only
     const rowEl = e.target.closest(".wall-row");
-    active = rows.find((r) => r.rowEl === rowEl) || null;
-    if (!active) return;
-    active.dragging = true;
+    const row = rows.find((r) => r.rowEl === rowEl) || null;
+    if (!row) return;
+    pending = row;
     startX = e.clientX;
-    startOffset = active.offset;
-    moved = 0;
+    startOffset = row.offset;
     pid = e.pointerId;
-    active.rowEl.classList.add("is-grabbing");
-    try {
-      wall.setPointerCapture(pid);
-    } catch (_) {}
+    didDrag = false;
   };
   const onMove = (e) => {
-    if (!active || e.pointerId !== pid) return;
-    const dx = e.clientX - startX;
-    if (Math.abs(dx) > moved) moved = Math.abs(dx);
-    active.offset = startOffset + dx;
+    if (e.pointerId !== pid || (!pending && !active)) return;
+    if (!active) {
+      // Still a potential click until the pointer clears the threshold.
+      if (Math.abs(e.clientX - startX) <= DRAG_THRESHOLD) return;
+      // Promote to a real drag. Capture the pointer now (not on press) and
+      // re-baseline against the live offset so auto-scroll drift between the
+      // press and this first move doesn't make the row jump.
+      active = pending;
+      active.dragging = true;
+      active.rowEl.classList.add("is-grabbing");
+      startX = e.clientX;
+      startOffset = active.offset;
+      didDrag = true;
+      try {
+        wall.setPointerCapture(pid);
+      } catch (_) {}
+    }
+    active.offset = startOffset + (e.clientX - startX);
     wrap(active);
     apply(active);
   };
   const onUp = () => {
-    if (!active) return;
-    const dragged = moved > 6;
-    active.dragging = false;
-    active.rowEl.classList.remove("is-grabbing");
-    try {
-      wall.releasePointerCapture(pid);
-    } catch (_) {}
+    if (active) {
+      active.dragging = false;
+      active.rowEl.classList.remove("is-grabbing");
+      try {
+        wall.releasePointerCapture(pid);
+      } catch (_) {}
+    }
+    const dragged = didDrag;
     active = null;
+    pending = null;
     pid = null;
     if (dragged) {
       // Swallow the click that follows a real drag so the lightbox stays shut.
