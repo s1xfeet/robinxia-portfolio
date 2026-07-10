@@ -1,0 +1,29 @@
+# Files here are excluded from the Cloudflare Workers asset upload.
+# Uses .gitignore syntax. Wrangler reads this from the assets directory root.
+
+# Version control — NEVER ship this. It broke the 25 MiB asset limit (33 MiB
+# pack file) and would expose full source history at /.git/ if deployed.
+.git
+.git/**
+
+# Wrangler's own generated config (auto-created each build)
+wrangler.json
+wrangler.jsonc
+wrangler.toml
+.wrangler
+.dev.vars
+
+# Repo meta / local dev — not part of the site
+.gitignore
+.assetsignore
+README.md
+README-DESIGN.md
+dev-server.py
+content/
+.claude/
+
+# Source font files — the site loads the subsetted .woff2, not these
+assets/fonts/*.ttf
+
+# OS cruft
+.DS_Store
