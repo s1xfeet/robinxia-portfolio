@@ -1,0 +1,257 @@
+/* SECTION: testimonial (On the Record). A client's on-camera reference sits
+   beside a pull-quote of the line that matters. The screen is a click-to-play
+   poster that opens the full clip in the shared lightbox (js/lightbox.js);
+   nothing autoplays, so there is no video on this scroll surface. */
+
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+}
+
+/* ---- the pull-quote ------------------------------------------------ */
+
+.testimonial-quote {
+  position: relative;
+  margin: 0;
+  padding-left: clamp(1.4rem, 3vw, 3rem);
+}
+
+/* oversized record-red quotation mark, set well back as atmosphere */
+.testimonial-mark {
+  position: absolute;
+  top: -0.34em;
+  left: -0.12em;
+  z-index: 0;
+  font-family: var(--font-display);
+  font-size: clamp(6rem, 4rem + 10vw, 12rem);
+  line-height: 1;
+  color: var(--color-rec);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+/* Closing mark: the last word ("channel.") is wrapped in a nowrap inline box,
+   and the glyph is absolutely positioned just past its right edge (left:100%).
+   Because the wrapper carries the real word, the mark can never orphan onto its
+   own line, and being out of flow it never changes wrapping. The size scales
+   with the viewport (9vw) so it echoes the big opening flourish on desktop but
+   shrinks enough to stay inside the column on phones. */
+.testimonial-endword {
+  position: relative;
+  white-space: nowrap;
+}
+
+.testimonial-quoteclose__glyph {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  transform: translate(0.04em, -0.04em);
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 1rem + 9vw, 11rem);
+  line-height: 1;
+  color: var(--color-rec);
+  opacity: 0.14;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.testimonial-blockquote {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+.testimonial-text {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 1.1rem + 2.4vw, 3rem);
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* the endorsement stamp: a small record-red seal punctuating the quote */
+.testimonial-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: clamp(1.1rem, 2.5vw, 1.75rem);
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-rec);
+}
+
+.testimonial-cite {
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.testimonial-name {
+  width: max-content;
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.testimonial-role {
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.16em;
+}
+
+/* ---- the reference monitor ---------------------------------------- */
+
+.testimonial-screen {
+  display: block;
+  position: relative;
+  text-decoration: none;
+  border-radius: 1px;
+}
+
+/* the frame carries the shadow + lift; .frame (atmosphere.css) draws the
+   border and clips the 16:9 poster */
+.testimonial-frame {
+  box-shadow:
+    0 clamp(0.75rem, 2vh, 1.75rem) clamp(2rem, 5vh, 4rem) rgba(0, 0, 0, 0.55),
+    0 0 0 1px var(--color-hairline);
+  transition:
+    transform var(--duration-fast) var(--ease-out-expo),
+    box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.testimonial-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* source is 16:9, so this is an exact fit, no crop */
+  display: block;
+}
+
+/* Eric's room is bright and white-walled; a top/bottom wash plus a soft center
+   vignette keeps the corner chrome and play button legible over it */
+.testimonial-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.58),
+      rgba(0, 0, 0, 0.14) 30%,
+      rgba(0, 0, 0, 0.14) 60%,
+      rgba(0, 0, 0, 0.62)
+    ),
+    radial-gradient(120% 90% at 50% 46%, transparent 42%, rgba(0, 0, 0, 0.42));
+}
+
+.testimonial-frame .frame__label {
+  z-index: 3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.testimonial-tc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--color-rec);
+}
+
+/* centered play button */
+.testimonial-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: clamp(3.25rem, 8vw, 4.75rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.64); /* opaque enough to hide busy poster behind */
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+  transition:
+    transform var(--duration-fast) var(--ease-out-expo),
+    background var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.testimonial-play svg {
+  width: 40%;
+  height: 40%;
+  margin-left: 8%; /* optically center the triangle */
+  fill: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+.testimonial-cue {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.7rem;
+  z-index: 3;
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  opacity: 0.85;
+}
+
+/* hover / focus: the screen lifts, its edge goes record-red, the button fills */
+.testimonial-screen:hover .testimonial-frame,
+.testimonial-screen:focus-visible .testimonial-frame {
+  transform: translateY(-4px) scale(1.012);
+  box-shadow:
+    0 clamp(1.25rem, 3vh, 2.5rem) clamp(2.5rem, 6vh, 5rem) rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--color-rec);
+}
+
+.testimonial-screen:hover .testimonial-play,
+.testimonial-screen:focus-visible .testimonial-play {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: var(--color-rec);
+  border-color: var(--color-rec);
+}
+
+.testimonial-screen:focus-visible {
+  outline: 2px solid var(--color-tc);
+  outline-offset: 4px;
+}
+
+/* stack on narrow screens; put the video first so the proof leads */
+@media (max-width: 860px) {
+  .testimonial-grid {
+    grid-template-columns: 1fr;
+    gap: clamp(1.75rem, 6vw, 2.5rem);
+  }
+  .testimonial-screen {
+    order: 1;
+  }
+  .testimonial-quote {
+    order: 2;
+    padding-left: clamp(1rem, 4vw, 2rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-frame,
+  .testimonial-play {
+    transition: none;
+  }
+  .testimonial-screen:hover .testimonial-frame,
+  .testimonial-screen:focus-visible .testimonial-frame {
+    transform: none;
+  }
+}
