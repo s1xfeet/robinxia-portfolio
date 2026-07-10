@@ -1,0 +1,39 @@
+/* SECTION: contact — roll credits. */
+
+.contact-stage {
+  display: grid;
+  justify-items: start;
+}
+
+.contact-line {
+  font-size: clamp(1.05rem, 1rem + 0.6vw, 1.3rem);
+  max-width: 48ch;
+  line-height: 1.6;
+}
+
+.contact-email {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 1rem + 4vw, 4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-rec);
+  margin-block: clamp(1.5rem, 4vw, 2.5rem) clamp(1.75rem, 4vw, 2.75rem);
+  overflow-wrap: anywhere;
+  transition: color var(--duration-fast) ease;
+}
+
+.contact-email:hover {
+  color: var(--color-tc);
+}
+
+.contact-at {
+  color: var(--color-rec);
+}
+
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}

@@ -1,0 +1,44 @@
+/* ============================================================
+   TOKENS — Robin Xia portfolio
+   Cinematic dark: edit-suite surfaces, record-red + timecode-amber
+   ============================================================ */
+
+:root {
+  /* Surfaces — near-black, warm-neutral. Never pure #000 for page surfaces. */
+  --color-surface: oklch(13% 0.006 270);
+  --color-surface-raised: oklch(16.5% 0.007 270);
+  --color-surface-overlay: oklch(20% 0.008 270);
+
+  /* Ink */
+  --color-text: oklch(93% 0.006 85);
+  --color-text-dim: oklch(66% 0.008 85);
+  --color-hairline: oklch(27% 0.006 270);
+
+  /* Semantic accents — used sparingly, like lights in a dark room */
+  --color-rec: oklch(58% 0.22 27);   /* record red: live states, key marks */
+  --color-tc: oklch(80% 0.13 80);    /* timecode amber: labels, meters, focus */
+
+  /* Type */
+  --font-display: "Bebas Neue", "Arial Narrow", "Impact", sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Menlo", monospace;
+
+  --text-hero: clamp(3.5rem, 2rem + 9vw, 10rem);
+  --text-h2: clamp(2.5rem, 1.6rem + 4.5vw, 5.5rem);
+  --text-h3: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  --text-base: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  --text-small: 0.875rem;
+  --text-mono-label: 0.75rem;
+
+  /* Rhythm */
+  --space-section: clamp(5rem, 4rem + 8vw, 12rem);
+  --space-gutter: clamp(1.25rem, 4vw, 4rem);
+  --width-content: 72rem;
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-cine: cubic-bezier(0.22, 1, 0.36, 1); /* longer, filmic settle */
+  --duration-fast: 180ms;
+  --duration-reveal: 780ms;
+  --duration-slate: 960ms; /* slate clap: title clip + rule draw */
+}

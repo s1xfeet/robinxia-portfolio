@@ -1,0 +1,656 @@
+/* SECTION: work - two full-viewport client scenes + cutting log.
+   Each feature client (jackdoesskits, NK) is a page-tall panel with the
+   client's real clips playing full-bleed in the background. A foreground
+   playlist of numbered takes lets you hover to preview any clip in that
+   background and click to open it in the lightbox. Below the two scenes,
+   the cutting log lists five smaller engagements in normal flow. */
+
+/* client name -> YouTube channel; a record-red underline sweeps in on
+   hover/focus. Applies in scene headings and cutting-log rows. */
+.client-link {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.client-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.06em;
+  width: 100%;
+  height: 2px;
+  background: var(--color-rec);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.client-link:hover::after,
+.client-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-link::after {
+    transition: none;
+  }
+}
+
+.section-intro {
+  font-size: clamp(1.125rem, 1rem + 1vw, 1.5rem);
+  max-width: 48ch;
+  line-height: 1.5;
+}
+
+/* the intro is followed immediately by the full-bleed jack scene; give it room
+   to breathe so its edge does not collide with the scene's background */
+.section--work .section-body > .wrap:first-child {
+  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+/* --- shared scene copy ------------------------------------------- */
+
+.work-status {
+  color: var(--color-tc);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.scene__client {
+  font-family: var(--font-display);
+  line-height: 0.8;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 4;
+}
+
+.work-role {
+  color: var(--color-tc);
+  margin-top: 0.6rem;
+}
+
+.work-narrative {
+  margin-top: 1.1rem;
+  color: var(--color-text-dim);
+  max-width: 46ch;
+}
+
+.work-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.metric dt {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.metric dd {
+  margin: 0.35em 0 0;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-tc);
+  font-variant-numeric: tabular-nums;
+}
+
+.work-tags {
+  margin-top: 1.25rem;
+  letter-spacing: 0.15em;
+}
+
+/* --- full-viewport scenes --------------------------------------- */
+
+/* Each client is a page-like panel: full-bleed, a viewport tall, its clips
+   playing behind the copy. .section-body drops .wrap so scenes reach edge to
+   edge; the intro and cutting log carry their own inner .wrap. */
+.work-scene {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding-block: clamp(3.5rem, 9vh, 7rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.scene__inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+  padding-inline: var(--space-gutter);
+}
+
+.scene__index {
+  color: var(--color-tc);
+  letter-spacing: 0.28em;
+  margin-bottom: clamp(1.5rem, 4vh, 3rem);
+}
+
+/* --- full-bleed cinema background -------------------------------- */
+
+/* The client's clip plays edge to edge behind the copy. Layers, back to
+   front: poster (base) -> two crossfading video layers -> scrim wash.
+   work.js builds the video layers and swaps them on hover/auto-advance. */
+.scene__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.scene__poster,
+.scene__bgvid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scene__poster {
+  z-index: 0;
+}
+
+.scene__bgvid {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  /* cross-dissolve when the active clip changes - opacity only */
+  transition: opacity 260ms linear;
+}
+
+.scene__bgvid.is-front {
+  opacity: 1;
+}
+
+/* Darkens the footage for legibility: heavier at the bottom (narrative and
+   metrics) and along the left (identity), lighter top-right so the clip still
+   reads as playing. One base tint keeps the whole frame from blowing out. */
+.scene__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to top,
+      color-mix(in oklch, var(--color-surface) 94%, transparent) 0%,
+      color-mix(in oklch, var(--color-surface) 40%, transparent) 46%,
+      transparent 82%
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in oklch, var(--color-surface) 78%, transparent) 0%,
+      color-mix(in oklch, var(--color-surface) 34%, transparent) 52%,
+      color-mix(in oklch, var(--color-surface) 46%, transparent) 100%
+    ),
+    color-mix(in oklch, var(--color-surface) 30%, transparent);
+}
+
+/* --- scene layout: identity | playlist -------------------------- */
+
+.scene__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.65fr);
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: center;
+}
+
+.work-scene--jack .scene__client {
+  font-size: clamp(3rem, 1.5rem + 7vw, 8rem);
+  margin-bottom: 0.16em;
+  text-shadow: 0 0.04em 0.5em rgba(0, 0, 0, 0.6);
+}
+
+
+/* --- take playlist (hover to preview, click to watch) ----------- */
+
+.scene__reel {
+  align-self: center;
+}
+
+.scene__reel-label {
+  color: var(--color-tc);
+  letter-spacing: 0.2em;
+  margin-bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.reel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reel-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.72rem 0.1rem;
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.reel-list li:last-child .reel-item {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+/* record-red index bar draws in on the active/hovered take */
+.reel-item::before {
+  content: "";
+  position: absolute;
+  left: -0.9rem;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  background: var(--color-rec);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.reel-item__no {
+  color: var(--color-text-dim);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--duration-fast) ease;
+}
+
+.reel-item__title {
+  min-width: 0; /* let the 1fr grid track shrink instead of forcing overflow */
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--duration-fast) ease;
+}
+
+.reel-item__play {
+  color: var(--color-rec);
+  font-size: 0.7rem;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.reel-item:hover,
+.reel-item:focus-visible,
+.reel-item.is-active {
+  transform: translateX(4px);
+  outline: none;
+}
+
+.reel-item:hover::before,
+.reel-item:focus-visible::before,
+.reel-item.is-active::before {
+  transform: scaleY(1);
+}
+
+.reel-item:hover .reel-item__no,
+.reel-item:focus-visible .reel-item__no,
+.reel-item.is-active .reel-item__no {
+  color: var(--color-rec);
+}
+
+.reel-item:hover .reel-item__title,
+.reel-item:focus-visible .reel-item__title,
+.reel-item.is-active .reel-item__title {
+  color: var(--color-text);
+}
+
+.reel-item:hover .reel-item__play,
+.reel-item:focus-visible .reel-item__play,
+.reel-item.is-active .reel-item__play {
+  opacity: 1;
+  transform: none;
+}
+
+/* keyboard focus needs a visible ring since the row has no outline */
+.reel-item:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--color-tc);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene__bgvid,
+  .reel-item,
+  .reel-item::before,
+  .reel-item__no,
+  .reel-item__title,
+  .reel-item__play {
+    transition: none;
+  }
+}
+
+/* --- Scene 02: NK, rebuilt to replicate The Writing section -------
+   A drifting background carousel of NK's four shorts (a clone of
+   .writing-carousel) sits behind an identity header, the narrative intro, and
+   a grid of glass "watch" cards that reuse .writing-grid + .script-card. The
+   card body is each short's real still (the honest medium-analog of writing's
+   text excerpt) and the whole still opens the real Short in the lightbox.
+   Natural height, like the writing section, not the jack scene's full viewport.
+   The drifting tiles are built + gated by js/sections/work-nk-bg.js. */
+
+.work-scene--nk {
+  min-height: auto;
+  display: block;
+  padding-block: clamp(3.5rem, 4rem + 4vw, 8rem);
+}
+
+/* identity block: kicker + wordmark + role + rule, weighted like a slate */
+.nk-head {
+  position: relative;
+  margin-bottom: clamp(1.5rem, 4vw, 2.75rem);
+}
+
+.nk-wordmark {
+  font-size: var(--text-h2);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0.04em 0.5em rgba(0, 0, 0, 0.55);
+}
+
+.nk-rule {
+  margin-top: clamp(1rem, 3vw, 1.75rem);
+}
+
+.nk-intro {
+  max-width: 60ch;
+}
+
+.nk-metrics {
+  max-width: 34rem;
+}
+
+/* NK's shorts are vertical, so the grid is a shelf of four short-form boxes.
+   Scoped under .work-scene--nk so it beats the shared .writing-grid rules
+   (which load later in the cascade). Collapses to 2-up below. */
+.nk-grid {
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+}
+
+.work-scene--nk .nk-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+.nk-tags {
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+/* tighter glass shell so the 9:16 still is the hero of each short-form box.
+   Scoped under .work-scene--nk to beat the shared .script-card padding/gap. */
+.work-scene--nk .nk-card {
+  gap: 0.8rem;
+  padding: clamp(0.85rem, 1.6vw, 1.15rem);
+}
+
+.nk-card-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 9 / 16; /* short-form: matches the source, no crop */
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  background: #000;
+  text-decoration: none;
+}
+
+.nk-card-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform var(--duration-normal, 300ms) var(--ease-out-expo);
+}
+
+/* wash so the label reads over any still */
+.nk-card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 42%);
+}
+
+.nk-card-play {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.7rem;
+  z-index: 1;
+  color: var(--color-text);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color var(--duration-fast) ease;
+}
+
+.nk-card-media:hover img,
+.nk-card-media:focus-visible img {
+  transform: scale(1.05);
+}
+
+.nk-card-media:hover .nk-card-play,
+.nk-card-media:focus-visible .nk-card-play {
+  color: var(--color-rec);
+}
+
+.nk-card-media:focus-visible {
+  outline: 2px solid var(--color-tc);
+  outline-offset: 2px;
+}
+
+/* --- NK background carousel (clone of .writing-carousel) ---------- */
+
+.nk-carousel {
+  position: absolute;
+  inset: -3rem 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .nk-carousel {
+      animation: nk-parallax linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes nk-parallax {
+  from { transform: translateY(-1.5rem); }
+  to { transform: translateY(1.5rem); }
+}
+
+.nk-track {
+  display: flex;
+  height: 100%;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  width: max-content;
+  padding-inline: clamp(0.375rem, 0.75vw, 0.625rem);
+  animation: nk-scroll var(--nk-dur, 60s) linear infinite;
+  will-change: transform;
+  opacity: 0.5;
+}
+
+@keyframes nk-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* set by work-nk-bg.js while the scene is off-screen or playback is gated */
+.nk-track.is-idle {
+  animation-play-state: paused;
+}
+
+.nk-tile {
+  flex: none;
+  height: 100%;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  overflow: hidden;
+}
+
+.nk-vid {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* heavy vignette + surface fade so the drifting reel reads as dim atmosphere */
+.nk-carousel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 82% 92% at 50% 50%,
+      transparent 40%,
+      color-mix(in oklch, var(--color-surface) 90%, transparent) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      var(--color-surface) 0%,
+      transparent 20%,
+      transparent 80%,
+      var(--color-surface) 100%
+    ),
+    color-mix(in oklch, var(--color-surface) 68%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-track {
+    animation: none;
+  }
+  .nk-card-media img {
+    transition: none;
+  }
+  .nk-card-media:hover img,
+  .nk-card-media:focus-visible img {
+    transform: none;
+  }
+}
+
+/* --- cutting log ------------------------------------------------ */
+
+.work-log {
+  margin-top: calc(var(--space-section) / 2.5);
+}
+
+.work-log-label {
+  color: var(--color-tc);
+  letter-spacing: 0.25em;
+  margin-bottom: 1rem;
+}
+
+.work-row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) 1fr auto;
+  gap: 0.75rem 2.5rem;
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--color-hairline);
+  align-items: start;
+}
+
+.work-row:last-child {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.work-row-client {
+  font-size: var(--text-h3);
+  text-transform: uppercase;
+}
+
+/* current-client marker next to the name: a touch larger and closer than the
+   default rec-dot so it reads as attached to the big heading */
+.work-row-client .rec-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 0.5em;
+  vertical-align: 0.18em;
+}
+
+.work-row-role {
+  margin-top: 0.4rem;
+}
+
+.work-row-narrative {
+  max-width: 55ch;
+  font-size: var(--text-small);
+  line-height: 1.65;
+}
+
+.work-metrics--row {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  gap: 1rem 2rem;
+  justify-self: end;
+  text-align: right;
+}
+
+/* --- responsive -------------------------------------------------- */
+
+/* Full-viewport panels are a desktop luxury. On narrow screens the scenes
+   collapse to a clean stacked layout: identity above the playlist, natural
+   height, the clip showing as a dimmed poster behind a heavier scrim. */
+@media (max-width: 860px) {
+  .work-scene {
+    min-height: auto;
+    padding-block: clamp(3rem, 12vw, 5rem);
+  }
+
+  .scene__grid {
+    grid-template-columns: 1fr;
+    gap: clamp(1.75rem, 6vw, 2.75rem);
+    align-items: start;
+  }
+
+  .work-metrics--row {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .work-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* the short-form shelf drops from four boxes to two (beats .writing-grid's
+     1-column collapse via the higher-specificity selector) */
+  .work-scene--nk .nk-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -1,0 +1,85 @@
+/* SECTION: about — bio + timeline/kit ledger. */
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: start;
+}
+
+.about-bio {
+  font-size: clamp(1.05rem, 1rem + 0.6vw, 1.35rem);
+  line-height: 1.7;
+  max-width: 58ch;
+}
+
+.about-side-label {
+  color: var(--color-tc);
+  letter-spacing: 0.25em;
+  margin-bottom: 1rem;
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2.5rem;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: minmax(10.5rem, max-content) 1fr;
+  gap: 1rem;
+  padding-block: 0.65rem;
+  border-top: 1px solid var(--color-hairline);
+  align-items: baseline;
+}
+
+.timeline li:last-child {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.tl-period {
+  color: var(--color-tc);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tl-line {
+  font-size: var(--text-small);
+  line-height: 1.5;
+}
+
+.skills {
+  margin: 0 0 2rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.skills-group dt {
+  color: var(--color-tc);
+  letter-spacing: 0.18em;
+  margin-bottom: 0.4rem;
+}
+
+.skills-group dd {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: 1.7;
+}
+
+.about-langs {
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 860px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .timeline li {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}

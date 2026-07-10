@@ -1,0 +1,451 @@
+/* SECTION: hero — the work wall.
+   A 230vh scroll runway with a sticky 100svh stage. Behind the hero
+   statement: three auto-scrolling marquee rows of work tiles. JS sets
+   --wall-p (0 → 1) inline on .section--hero; everything scroll-driven
+   below derives from it. JS also toggles .is-live / .is-offscreen on
+   .wall and sets --row-dur inline on each .wall-track. */
+
+/* ---- runway + stage ------------------------------------------- */
+
+.section--hero {
+  position: relative;
+  height: 230vh;
+  padding-block: 0;
+  /* no bottom margin: the work section's own padding-top is the single gap,
+     so the wall does not scroll away into a doubled void before Selected Work */
+  margin-block-end: 0;
+}
+
+.hero-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: clip;
+}
+
+/* ---- wall ------------------------------------------------------ */
+
+.wall {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(0.75rem, 2vh, 1.5rem);
+  padding-block: 5.5rem 3rem;
+  pointer-events: none;
+  /* settles from a gentle over-scale to 1 as the user scrolls */
+  transform: scale(calc(1.055 - 0.055 * var(--wall-p, 0)));
+}
+
+.wall.is-live {
+  pointer-events: auto; /* inert removal is JS's job */
+}
+
+.wall-row {
+  flex: 1 1 0;
+  min-height: 0;
+  /* Clip the marquee on x only. Tiles fill the row height exactly, so
+     the hover lift and focus outlines need y headroom; visible + clip
+     is a valid combo, and browsers without it fall back to full clip. */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.wall-track {
+  display: flex;
+  height: 100%;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  width: max-content;
+  /* Load-bearing: total inline padding equals ONE track gap, which makes
+     translateX(-50%) land exactly one tile-set + one gap over — the
+     seamless loop depends on padding-inline being half the gap. */
+  padding-inline: clamp(0.375rem, 0.75vw, 0.625rem);
+  animation: wall-scroll var(--row-dur, 80s) linear infinite;
+  will-change: transform;
+}
+
+.wall-row--rev .wall-track {
+  animation-direction: reverse;
+}
+
+/* works because each track holds its tile set twice */
+@keyframes wall-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.wall-row:hover .wall-track,
+.wall-row:focus-within .wall-track,
+.wall.is-offscreen .wall-track {
+  animation-play-state: paused;
+}
+
+/* ---- JS drag-scroll (progressive enhancement) ------------------
+   When wall.js is active it drives the marquee via transform so the rows
+   can be dragged/scrubbed; the CSS animation is disabled to hand off. */
+.wall.js-scroll .wall-track {
+  animation: none;
+}
+
+.wall.js-scroll .wall-row {
+  cursor: grab;
+  touch-action: pan-y; /* vertical gestures still scroll the page */
+}
+
+.wall.js-scroll .wall-row.is-grabbing {
+  cursor: grabbing;
+}
+
+.wall.js-scroll .wall-row a {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* ---- tiles ------------------------------------------------------ */
+
+.tile {
+  position: relative;
+  flex: none;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000; /* literal black is correct — tiles are screens */
+  border: 1px solid var(--color-hairline);
+  /* Lock everything to the frame. The hovered clip scales past 1 and would
+     otherwise escape the border and spill onto neighbours; clip re-pins it to
+     the inner border edge so the red frame and brackets stay true. The tile's
+     own hover scale still shows because rows keep overflow-y visible, and clip
+     never affects the focus-visible outline (outlines paint outside the box). */
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+  text-decoration: none;
+  color: var(--color-text);
+  opacity: calc(0.72 + 0.28 * var(--wall-p, 0));
+  transition:
+    transform var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease,
+    filter var(--duration-fast) ease;
+}
+
+.tile--tall {
+  aspect-ratio: 9 / 16;
+}
+
+/* tall tiles are narrow — cap the display size so long single-word
+   clients (jackdoesskits, ShortsPush) fit without mid-word breaks */
+.tile--tall .tile__client {
+  font-size: clamp(0.85rem, 0.7rem + 0.55vw, 1.15rem);
+}
+
+/* corner tick, echoing the site's frame labels */
+.tile::before {
+  content: "";
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-top: 1px solid var(--color-tc);
+  border-left: 1px solid var(--color-tc);
+  opacity: 0.7;
+  z-index: 1; /* stays above the background video + scrim */
+  transition:
+    border-color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+/* Mirrored bottom-right corner, hidden at rest. On hover it snaps in from a
+   slight inward nudge to complete a viewfinder bracket around the selected
+   take, so the frame reads as locking on rather than just appearing. */
+.tile::after {
+  content: "";
+  position: absolute;
+  bottom: 0.55rem;
+  right: 0.55rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-bottom: 1px solid var(--color-rec);
+  border-right: 1px solid var(--color-rec);
+  opacity: 0;
+  transform: translate(-0.2rem, -0.2rem);
+  z-index: 1; /* rides with the top tick, above video + scrim */
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.tile__client {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 0.8rem + 0.9vw, 1.6rem);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  overflow-wrap: anywhere; /* long single-word clients stay inside 9/16 tiles */
+}
+
+.tile__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-tc);
+}
+
+/* interactive states - only reachable once .wall is live.
+   Hover / focus reads as pulling the "selected take" off a monitor wall:
+   the tile steps forward and goes full-bright, the rec-red frame ignites. */
+.tile[href]:hover,
+.tile[href]:focus-visible {
+  border-color: var(--color-rec);
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.tile[href]:focus-visible {
+  outline: 2px solid var(--color-tc);
+  outline-offset: 2px;
+}
+
+/* Spotlight: in a hovered / focused row, every tile that is NOT the selected
+   take recedes so the live one owns the eye. Opacity + a light desaturate,
+   both compositor-friendly; the hovered tile is excluded so it stays lit. */
+.wall-row:hover .tile:not(:hover),
+.wall-row:focus-within .tile:not(:focus-visible):not(:hover) {
+  opacity: 0.42;
+  filter: saturate(0.85);
+}
+
+/* Viewfinder locks on: the top tick flips to rec-red and eases outward while
+   the mirrored bottom-right corner snaps in, bracketing the frame. */
+.tile[href]:hover::before,
+.tile[href]:focus-visible::before {
+  border-color: var(--color-rec);
+  opacity: 1;
+  transform: translate(-0.1rem, -0.1rem);
+}
+
+.tile[href]:hover::after,
+.tile[href]:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+.tile[data-pending] {
+  cursor: default;
+}
+
+/* ---- live video tiles -------------------------------------------- */
+
+/* Background clip fills the tile behind the label. .tile keeps its
+   literal #000 background as the fallback shown before the poster /
+   clip paints, so text-only tiles are wholly unaffected. */
+.tile__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 0; /* behind the label + tick, above the black fallback */
+  /* compositor-only flourish on hover — poster/clip scales, no layout props */
+  transition: transform var(--duration-normal, 300ms)
+    var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Bottom-weighted wash so CLIENT / label stay legible over bright
+   frames. Sits above the video but below the text and corner tick. */
+.tile__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0; /* follows .tile__video in DOM, so paints on top of it */
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+  transition: opacity var(--duration-fast) ease;
+}
+
+/* On hover the bottom wash lifts a touch so the live frame reads vivid. It
+   never fully clears: the text carries its own shadow (below), so CLIENT /
+   label stay legible over even the brightest clip. */
+.tile[href]:hover .tile__scrim,
+.tile[href]:focus-visible .tile__scrim {
+  opacity: 0.78;
+}
+
+/* Label text rides above video + scrim. The shadow is always on so the copy
+   holds up when the scrim lifts on hover; typography itself is untouched. */
+.tile__client,
+.tile__label {
+  position: relative;
+  z-index: 1;
+  /* Tight, high-contrast shadow that hugs the glyphs. A wider blur read as a
+     milky haze over bright frames in the label corner; this keeps the copy
+     legible without washing the clip. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+/* Selected take comes alive - clip scales up. Transform only, no layout. */
+.tile[href]:hover .tile__video,
+.tile[href]:focus-visible .tile__video {
+  transform: scale(1.06);
+}
+
+/* ---- scrim ------------------------------------------------------ */
+
+.wall-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 100% at 50% 42%,
+    var(--color-surface) 0%,
+    oklch(9% 0.005 270) 100%
+  );
+  /* ~0.87 at landing (text-safe), ~0.08 fully scrolled (wall vivid) */
+  opacity: calc(0.87 - 0.79 * var(--wall-p, 0));
+}
+
+/* ---- overlay (statement) ---------------------------------------- */
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  pointer-events: none; /* contains no interactive elements */
+  opacity: clamp(0, calc(1 - 1.45 * var(--wall-p, 0)), 1); /* gone by p≈0.7 */
+  translate: 0 calc(var(--wall-p, 0) * -2.5rem);
+}
+
+.hero-layout {
+  display: grid;
+  gap: clamp(2rem, 6vh, 3.5rem);
+}
+
+.hero-topline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.hero-meta {
+  color: var(--color-text-dim);
+  line-height: 1.9;
+}
+
+.hero-statement {
+  font-size: var(--text-hero);
+  text-transform: uppercase;
+  line-height: 0.9;
+}
+
+.hero-line {
+  display: block;
+}
+
+.hero-line--indent {
+  margin-left: clamp(2.5rem, 14vw, 12rem);
+}
+
+.hero-line--half {
+  margin-left: clamp(1.25rem, 7vw, 6rem);
+}
+
+.hero-period {
+  color: var(--color-rec);
+}
+
+.hero-cue {
+  position: absolute;
+  bottom: 2rem;
+  left: var(--space-gutter);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75em;
+  color: var(--color-text-dim);
+}
+
+.hero-cue-arrow {
+  display: inline-block;
+  color: var(--color-tc);
+  animation: cue-bob 2.2s ease-in-out infinite;
+}
+
+@keyframes cue-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* ---- responsive -------------------------------------------------- */
+
+@media (max-width: 700px) {
+  .wall {
+    gap: clamp(0.6rem, 1.4vh, 1rem);
+    padding-block: 4.5rem 2rem; /* header is shorter here */
+  }
+}
+
+/* ---- reduced motion ---------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-track {
+    animation: none;
+  }
+
+  .wall {
+    transform: none;
+  }
+
+  .hero-overlay {
+    translate: none;
+  }
+
+  .hero-cue-arrow {
+    animation: none;
+  }
+
+  .tile__video {
+    transition: none;
+  }
+
+  /* Kill every added transition so hover states snap instead of animate. */
+  .tile,
+  .tile::before,
+  .tile::after,
+  .tile__scrim,
+  .wall-row:hover .tile:not(:hover) {
+    transition: none;
+  }
+
+  /* Hold the resting geometry: no scale on the tile, no viewfinder nudge,
+     no clip zoom. The rec-red frame and spotlight dim still apply, statically. */
+  .tile::after,
+  .tile[href]:hover,
+  .tile[href]:focus-visible,
+  .tile[href]:hover::before,
+  .tile[href]:focus-visible::before,
+  .tile[href]:hover::after,
+  .tile[href]:focus-visible::after,
+  .tile[href]:hover .tile__video,
+  .tile[href]:focus-visible .tile__video {
+    transform: none;
+  }
+}

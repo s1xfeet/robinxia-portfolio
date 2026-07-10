@@ -1,0 +1,334 @@
+/* ============================================================
+   BASE — reset, typography, site chrome (header/footer), utilities
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+::selection {
+  background: var(--color-rec);
+  color: oklch(98% 0 0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-tc);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+p {
+  max-width: 65ch;
+}
+
+a {
+  color: inherit;
+}
+
+/* ---- utilities ---------------------------------------------- */
+
+.wrap {
+  max-width: var(--width-content);
+  margin-inline: auto;
+  padding-inline: var(--space-gutter);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dim {
+  color: var(--color-text-dim);
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-gutter);
+  z-index: 10001;
+  padding: 0.75em 1.25em;
+  background: var(--color-surface-overlay);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  border: 1px solid var(--color-hairline);
+}
+
+.skip-link:focus-visible {
+  top: 1rem;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-text);
+  text-decoration: none;
+  padding: 0.8em 1.6em;
+  border: 1px solid var(--color-hairline);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.btn:hover {
+  background: var(--color-rec);
+  border-color: var(--color-rec);
+  color: oklch(98% 0 0);
+}
+
+.btn--rec {
+  border-color: var(--color-rec);
+  color: var(--color-tc);
+}
+
+/* ---- site header --------------------------------------------- */
+
+.site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem var(--space-gutter);
+  /* Near-solid chrome, no backdrop-filter: a fixed blurred backdrop over the
+     hero videos and drifting carousels re-rasterizes every scroll frame, which
+     is what caused the occasional scroll flicker. A subtle gradient keeps the
+     depth without sampling the moving content behind it. */
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--color-surface) 97%, transparent),
+    color-mix(in oklch, var(--color-surface) 88%, transparent)
+  );
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.monogram {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.tc-readout {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.08em;
+  color: var(--color-tc);
+  font-variant-numeric: tabular-nums;
+}
+
+.site-nav {
+  margin-left: auto;
+}
+
+.site-nav ul {
+  display: flex;
+  gap: clamp(0.75rem, 2.5vw, 2rem);
+  list-style: none;
+  padding: 0;
+}
+
+.site-nav a {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  color: var(--color-text-dim);
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid transparent;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.site-nav a:hover {
+  color: var(--color-text);
+}
+
+.site-nav a[aria-current="true"] {
+  color: var(--color-tc);
+  border-bottom-color: var(--color-tc);
+}
+
+.site-header .btn {
+  padding: 0.6em 1.2em;
+}
+
+/* Header degrades gracefully on small screens */
+@media (max-width: 700px) {
+  .site-nav,
+  .tc-readout {
+    display: none;
+  }
+
+  .site-header {
+    justify-content: space-between;
+  }
+}
+
+/* ---- sections ------------------------------------------------ */
+
+.section {
+  padding-block: calc(var(--space-section) / 2) 0;
+  margin-block-end: var(--space-section);
+}
+
+.section-body {
+  margin-block-start: clamp(1.25rem, 3vw, 2rem);
+}
+
+/* ---- footer --------------------------------------------------- */
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem var(--space-gutter) 2.5rem;
+  border-top: 1px solid var(--color-hairline);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.site-footer a {
+  color: var(--color-text-dim);
+  text-decoration: none;
+  transition: color var(--duration-fast) ease;
+}
+
+.site-footer a:hover {
+  color: var(--color-tc);
+}
+
+/* ---- video lightbox ------------------------------------------ */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: oklch(4% 0.005 270 / 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: lightbox-fade var(--duration-fast) ease;
+}
+
+@keyframes lightbox-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lightbox__frame {
+  position: relative;
+  width: min(100%, 1080px);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 1px solid var(--color-hairline);
+  box-shadow: 0 24px 70px oklch(0% 0 0 / 0.55);
+}
+
+.lightbox__frame--tall {
+  width: auto;
+  height: min(100%, 84vh);
+  aspect-ratio: 9 / 16;
+}
+
+.lightbox__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lightbox__close {
+  position: absolute;
+  top: clamp(0.75rem, 3vw, 1.75rem);
+  right: clamp(0.75rem, 3vw, 1.75rem);
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklch, var(--color-surface) 60%, transparent);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.lightbox__close:hover,
+.lightbox__close:focus-visible {
+  border-color: var(--color-rec);
+  color: var(--color-rec);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox {
+    animation: none;
+  }
+}

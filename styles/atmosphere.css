@@ -1,0 +1,258 @@
+/* ============================================================
+   ATMOSPHERE — grain, vignette, letterbox frames, slates,
+   reveal motion, timecode progress. The cinematic layer.
+   ============================================================ */
+
+/* ---- film grain ---------------------------------------------- */
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+}
+
+/* ---- vignette (hero) ------------------------------------------ */
+
+.vignette {
+  position: relative;
+}
+
+.vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 90% at 50% 40%,
+    transparent 55%,
+    oklch(9% 0.005 270 / 0.65) 100%
+  );
+}
+
+/* ---- record dot ------------------------------------------------ */
+
+.rec-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-rec);
+  margin-right: 0.9em;
+  vertical-align: 0.1em;
+  animation: rec-pulse 2s ease-in-out infinite;
+}
+
+@keyframes rec-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---- slate (section opener) ------------------------------------ */
+
+.slate {
+  max-width: var(--width-content);
+  margin-inline: auto;
+  padding-inline: var(--space-gutter);
+}
+
+.slate__kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-label);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-tc);
+  margin-bottom: 0.6rem;
+}
+
+.slate__title {
+  font-size: var(--text-h2);
+  text-transform: uppercase;
+}
+
+.slate__rule {
+  height: 1px;
+  background: var(--color-hairline);
+  margin-top: clamp(0.9rem, 2vw, 1.4rem);
+}
+
+/* ---- letterbox media frames ------------------------------------ */
+
+.frame {
+  position: relative;
+  background: #000; /* literal black is correct inside a screen */
+  border: 1px solid var(--color-hairline);
+  overflow: hidden;
+}
+
+.frame--169 {
+  aspect-ratio: 16 / 9;
+}
+
+.frame__label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.9rem;
+  z-index: 3;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-tc);
+}
+
+.frame__label--tr {
+  left: auto;
+  right: 0.9rem;
+}
+
+/* ---- reveal motion --------------------------------------------- */
+
+/* Base: rise + fade. The default for bare [data-reveal] and "up". */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* Entrance variants: each overrides only the resting transform/clip.
+   Placed after the base so the attribute-value selectors win by order. */
+[data-reveal="left"] {
+  transform: translateX(-34px);
+}
+[data-reveal="right"] {
+  transform: translateX(34px);
+}
+[data-reveal="scale"] {
+  transform: scale(0.94);
+}
+[data-reveal="clip"] {
+  transform: translateY(18px);
+  clip-path: inset(0 0 100% 0);
+}
+/* "wipe": a rule/line that draws across from the left, no fade. */
+[data-reveal="wipe"] {
+  opacity: 1;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--duration-reveal) var(--ease-cine),
+    transform var(--duration-reveal) var(--ease-cine);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+
+/* clip settles a touch slower and animates its wipe alongside. */
+[data-reveal="clip"].is-revealed {
+  clip-path: inset(0 0 0 0);
+  transition:
+    opacity var(--duration-slate) var(--ease-cine),
+    transform var(--duration-slate) var(--ease-cine),
+    clip-path var(--duration-slate) var(--ease-cine);
+}
+
+[data-reveal="wipe"].is-revealed {
+  transform: scaleX(1);
+}
+
+/* Manual stagger steps still win over the auto --reveal-i cascade. */
+[data-reveal-delay="1"].is-revealed { transition-delay: 80ms; }
+[data-reveal-delay="2"].is-revealed { transition-delay: 160ms; }
+[data-reveal-delay="3"].is-revealed { transition-delay: 240ms; }
+[data-reveal-delay="4"].is-revealed { transition-delay: 320ms; }
+[data-reveal-delay="5"].is-revealed { transition-delay: 400ms; }
+[data-reveal-delay="6"].is-revealed { transition-delay: 480ms; }
+
+/* ---- section focus (spotlight the live scene) ------------------- */
+
+/* .js-focus is only present once section-focus.js runs, so JS-off keeps
+   every scene at full presence. Motion is gated to no-preference below. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Dim only the slate (text) of neighbouring sections. The old rule also
+     faded .section-body, but animating opacity over a subtree that holds
+     playing <video> (jack scene, nk + writing carousels) makes the compositor
+     re-blend the video layer on every focus change, which flickered on scroll.
+     Slates carry no video, so dimming them is flicker-safe. */
+  .js-focus main .section .slate {
+    transition: opacity 600ms var(--ease-cine);
+  }
+
+  .js-focus main .section:not(.is-current) .slate {
+    opacity: 0.5;
+  }
+
+  /* the current scene's record dot burns brighter and pulses tighter */
+  .section.is-current .slate__kicker .rec-dot {
+    animation-duration: 1.15s;
+    filter: drop-shadow(0 0 5px var(--color-rec));
+  }
+}
+
+/* ---- scroll-linked accents (progressive enhancement) ------------ */
+
+/* Gentle parallax drift as each slate crosses. Skipped entirely where
+   scroll-driven timelines or motion are unavailable. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .slate {
+      animation: slate-drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes slate-drift {
+  from { transform: translateY(1.6rem); }
+  to { transform: translateY(-1.6rem); }
+}
+
+/* ---- timecode progress ------------------------------------------ */
+
+#tc-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  z-index: 10000;
+  background: var(--color-tc);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+/* ---- reduced motion --------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot {
+    animation: none;
+  }
+
+  [data-reveal],
+  [data-reveal="left"],
+  [data-reveal="right"],
+  [data-reveal="scale"],
+  [data-reveal="clip"],
+  [data-reveal="wipe"] {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+  }
+
+  [data-reveal].is-revealed,
+  [data-reveal="clip"].is-revealed {
+    transition: none;
+  }
+}

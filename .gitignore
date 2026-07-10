@@ -1,0 +1,16 @@
+# Dev-only local server (Cloudflare Pages serves static files directly)
+dev-server.py
+
+# Source font files — superseded by the subsetted .woff2 in assets/fonts/,
+# which is what fonts.css actually loads. Kept out of the deploy to save space.
+assets/fonts/*.ttf
+
+# Internal docs and tooling — kept locally, never shipped/published.
+# content/ is the source-of-truth copy deck; the site renders copy from
+# index.html directly and never loads these at runtime.
+content/
+README-DESIGN.md
+.claude/
+
+# OS cruft
+.DS_Store

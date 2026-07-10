@@ -1,0 +1,130 @@
+/* SECTION: builds. One boxed feature card beside its live demo screen. */
+
+.builds-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+  align-items: start;
+}
+
+.build {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.build--feature {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-hairline);
+  padding: clamp(1.5rem, 3.5vw, 2.5rem);
+}
+
+.build-num {
+  color: var(--color-tc);
+  letter-spacing: 0.2em;
+}
+
+.build-name {
+  font-size: clamp(1.8rem, 1.4rem + 2vw, 2.75rem);
+  text-transform: uppercase;
+}
+
+.build-oneliner {
+  font-size: clamp(1.05rem, 1rem + 0.5vw, 1.3rem);
+  line-height: 1.5;
+}
+
+.build-desc {
+  font-size: var(--text-small);
+  line-height: 1.65;
+}
+
+.build-tags {
+  letter-spacing: 0.15em;
+}
+
+/* The builds section is a wide, centered showcase. Its header, intro, and
+   feature band all share the same 82rem centered width (wider than the default
+   72rem text wrap) so the heading lines up with the card below it. */
+.section--builds .slate,
+.section--builds .section-body > .wrap {
+  max-width: 82rem;
+}
+
+/* feature-with-demo layout: the build card is the fixed-width supporting
+   column; the demo takes the dominant remaining space so it reads large, and
+   the two are vertically centered against each other. */
+.builds-grid--demo {
+  max-width: 82rem;
+  margin-inline: auto;
+  padding-inline: var(--space-gutter);
+  grid-template-columns: minmax(0, 25rem) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: center;
+}
+
+/* the demo screen reuses the .frame media treatment (atmosphere.css): a
+   bordered 16:9 black screen with mono corner labels. The recording plays
+   muted + looped, lazily and gated, via js/sections/builds.js. */
+.build-demo {
+  position: relative;
+}
+
+.build-screen {
+  box-shadow:
+    0 clamp(0.75rem, 2vh, 1.75rem) clamp(2rem, 5vh, 4rem) rgba(0, 0, 0, 0.55),
+    0 0 0 1px var(--color-hairline);
+}
+
+/* the demo is bright, colourful motion; a top wash plus a shadow on the labels
+   keeps the amber/red corner chrome legible over it without dimming the clip */
+.build-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4.5rem;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.72),
+    rgba(0, 0, 0, 0.35) 45%,
+    transparent
+  );
+}
+
+.build-screen .frame__label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.build-screen__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* source is 16:9, so this is an exact fit, no crop */
+  display: block;
+}
+
+.build-live {
+  display: inline-flex;
+  align-items: center;
+}
+
+.build-cta {
+  justify-self: start;
+  margin-top: 0.5rem;
+}
+
+.build-cta[data-pending-url] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 860px) {
+  .builds-grid {
+    grid-template-columns: 1fr;
+  }
+}
