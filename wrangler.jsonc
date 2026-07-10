@@ -1,0 +1,27 @@
+{
+  // "name" matches the existing Worker shown in the Cloudflare dashboard
+  // (Workers & Pages → robinxia-portfolio) that serves
+  // portfolio.relatedshortschanger.com via Workers Builds from GitHub.
+  // Verified against the dashboard 2026-07-10 — this is not a placeholder.
+  // If you ever rename the Worker in the dashboard, update this to match,
+  // or the next `git push` will deploy a brand-new Worker instead of
+  // updating the live one. See ANALYTICS.md for the full walkthrough.
+  "name": "robinxia-portfolio",
+  "compatibility_date": "2026-07-01",
+  "main": "worker.js",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio-analytics",
+      "database_id": "5623cc1f-c6de-4bdb-9739-99a401026d54"
+    }
+  ],
+  "vars": {},
+  "observability": {
+    "enabled": true
+  }
+}

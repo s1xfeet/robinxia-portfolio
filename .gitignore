@@ -14,3 +14,7 @@ README-DESIGN.md
 
 # OS cruft
 .DS_Store
+
+# Wrangler local build cache / dev secrets — never commit
+.wrangler/
+.dev.vars

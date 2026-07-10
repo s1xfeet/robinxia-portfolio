@@ -40,3 +40,11 @@ assets/
 
 Static-host anywhere (Cloudflare Pages, Netlify, GitHub Pages, Vercel). There is
 no build command — serve the repository root as-is.
+
+## Analytics
+
+The site tracks its own first-party, cookieless analytics via a Cloudflare
+Worker (`worker.js`, `wrangler.jsonc`) — no third-party service involved.
+Collection works out of the box once deployed; viewing the `/stats` dashboard
+needs a short one-time setup. See [ANALYTICS.md](./ANALYTICS.md) for what's
+tracked and how to configure it.

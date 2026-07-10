@@ -18,9 +18,13 @@ wrangler.toml
 .assetsignore
 README.md
 README-DESIGN.md
+ANALYTICS.md
 dev-server.py
 content/
 .claude/
+
+# Worker source — runs server-side only, never served as a public asset
+worker.js
 
 # Source font files — the site loads the subsetted .woff2, not these
 assets/fonts/*.ttf

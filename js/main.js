@@ -27,3 +27,6 @@ import("./sections/writing-bg.js")
 import("./sections/builds.js")
   .then((mod) => mod.initBuilds?.())
   .catch(() => {});
+import("./analytics.js")
+  .then((mod) => mod.initAnalytics?.())
+  .catch(() => {});
