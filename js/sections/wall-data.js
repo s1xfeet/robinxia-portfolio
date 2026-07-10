@@ -44,7 +44,7 @@ export const WALL_ROWS = [
       { client: "Colby", label: "Street Interviews", kind: "tall", href: "https://www.tiktok.com/@colbymartel/video/7493629484642405663", src: "assets/wall/colby2.mp4", poster: "assets/wall/colby2.jpg" },
       { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/BKCSxsrmf9E", src: "assets/wall/zackwin10.mp4", poster: "assets/wall/zackwin10.jpg" },
       { client: "The Writing", label: "Video scripts", kind: "tall", href: "#writing", src: "assets/wall/zack32.mp4", poster: "assets/wall/zack32.jpg" },
-      { client: "Related Shorts Changer", label: "Chrome extension", kind: "tall", href: "#builds", src: "assets/wall/colby1.mp4", poster: "assets/wall/colby1.jpg" },
+      { client: "Related Shorts Changer", label: "Chrome extension", kind: "wide", href: "#builds", src: "assets/bg/rsc.mp4", poster: "assets/bg/rsc.jpg" },
     ],
   },
 ];
