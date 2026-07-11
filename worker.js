@@ -443,6 +443,49 @@ function queryPageviewDimension(env, cutoff, column, limit) {
   );
 }
 
+/** Raw pageview referrer counts (unbucketed) — grouping into channels
+ *  happens in JS via `classifyReferrer`, since hostnames are too messy to
+ *  bucket cleanly in SQL. No LIMIT: the long tail still needs to be seen
+ *  by the classifier so it can fold into the right channel. */
+function queryReferrerCounts(env, cutoff) {
+  return safeQuery(
+    env,
+    `SELECT referrer, COUNT(*) AS n FROM events
+     WHERE ts > ? AND event = 'pageview' GROUP BY referrer`,
+    [cutoff]
+  );
+}
+
+/** One referrer per session (first/only pageview referrer seen — MIN just
+ *  picks a stable single value per session). Used to tie a session's later
+ *  engagement events back to the channel that brought it in. */
+function querySessionReferrers(env, cutoff) {
+  return safeQuery(
+    env,
+    `SELECT session, MIN(referrer) AS referrer FROM events
+     WHERE ts > ? AND event = 'pageview' GROUP BY session`,
+    [cutoff]
+  );
+}
+
+function querySessionWallClicks(env, cutoff) {
+  return safeQuery(
+    env,
+    `SELECT session, COUNT(*) AS clicks FROM events
+     WHERE ts > ? AND event = 'wall_click' GROUP BY session`,
+    [cutoff]
+  );
+}
+
+function querySessionScrollDepth(env, cutoff) {
+  return safeQuery(
+    env,
+    `SELECT session, MAX(value) AS depth FROM events
+     WHERE ts > ? AND event = 'scroll_depth' GROUP BY session`,
+    [cutoff]
+  );
+}
+
 function queryScrollDepth(env, cutoff) {
   return safeQuery(
     env,
@@ -461,8 +504,227 @@ function queryDaily(env, cutoff) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// "This week" recap — Monday-start week in America/Toronto, independent of
+// the ?days= window used by the rest of the dashboard.
+// ---------------------------------------------------------------------------
+
+/** Broken-down date/time parts for `ms`, as observed in `zone`. */
+function zonedParts(ms, zone) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    weekday: "short",
+  });
+  const out = {};
+  for (const p of dtf.formatToParts(new Date(ms))) out[p.type] = p.value;
+  return out;
+}
+
+/** Convert a wall-clock date/time in `zone` to a UTC epoch-ms instant.
+ *  Standard guess/observe/correct approach — never hardcodes the zone's UTC
+ *  offset, so it stays correct across DST transitions. */
+function zonedWallClockToUtcMs(y, m, d, h, mi, s, zone) {
+  const guess = Date.UTC(y, m - 1, d, h, mi, s);
+  const observed = zonedParts(guess, zone);
+  const observedAsUtc = Date.UTC(
+    Number(observed.year),
+    Number(observed.month) - 1,
+    Number(observed.day),
+    Number(observed.hour) % 24,
+    Number(observed.minute),
+    Number(observed.second)
+  );
+  return guess + (guess - observedAsUtc);
+}
+
+/** UTC epoch-ms of the most recent Monday 00:00 in America/Toronto, at or
+ *  before `nowMs`. DST-aware (no fixed UTC offset); being off by up to an
+ *  hour right at a DST transition edge is acceptable. */
+function startOfWeekTorontoMs(nowMs) {
+  const zone = "America/Toronto";
+  const WEEKDAY_INDEX = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+  const today = zonedParts(nowMs, zone);
+  const daysSinceMonday = WEEKDAY_INDEX[today.weekday] ?? 0;
+
+  // Anchor on noon UTC so subtracting whole days can't skip a calendar date
+  // in the zone (Toronto's offset never exceeds 5h either side of UTC).
+  const todayNoonUtc = Date.UTC(Number(today.year), Number(today.month) - 1, Number(today.day), 12);
+  const mondayNoonUtc = todayNoonUtc - daysSinceMonday * 24 * 60 * 60 * 1000;
+  const monday = zonedParts(mondayNoonUtc, zone);
+
+  return zonedWallClockToUtcMs(Number(monday.year), Number(monday.month), Number(monday.day), 0, 0, 0, zone);
+}
+
+/** "Mon Jul 7" for the given UTC ms, as read in America/Toronto. Built from
+ *  formatToParts directly (rather than the locale's combined string) so we
+ *  control spacing/punctuation instead of inheriting a locale-added comma. */
+function formatWeekStartLabel(weekStartMs) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Toronto",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const parts = {};
+  for (const p of dtf.formatToParts(new Date(weekStartMs))) parts[p.type] = p.value;
+  return `${parts.weekday} ${parts.month} ${parts.day}`;
+}
+
+/** COUNT(*) and COUNT(DISTINCT session) for one event type within
+ *  (sinceMs, untilMs]. `untilMs == null` means no upper bound. */
+function queryEventWindow(env, event, sinceMs, untilMs) {
+  const sql =
+    untilMs == null
+      ? `SELECT COUNT(*) AS n, COUNT(DISTINCT session) AS sessions FROM events WHERE event = ? AND ts > ?`
+      : `SELECT COUNT(*) AS n, COUNT(DISTINCT session) AS sessions FROM events WHERE event = ? AND ts > ? AND ts <= ?`;
+  const params = untilMs == null ? [event, sinceMs] : [event, sinceMs, untilMs];
+  return safeQuery(env, sql, params);
+}
+
+/** AVG(value) for one event type within (sinceMs, untilMs]. */
+function queryAvgValueWindow(env, event, sinceMs, untilMs) {
+  const sql =
+    untilMs == null
+      ? `SELECT AVG(value) AS avg_v FROM events WHERE event = ? AND ts > ?`
+      : `SELECT AVG(value) AS avg_v FROM events WHERE event = ? AND ts > ? AND ts <= ?`;
+  const params = untilMs == null ? [event, sinceMs] : [event, sinceMs, untilMs];
+  return safeQuery(env, sql, params);
+}
+
+/** First row's numeric column, or null when the query failed or came back
+ *  empty (so a failed query renders "—" instead of blanking the panel). */
+function firstRowNumber(rows, key) {
+  if (!rows || rows.length === 0) return null;
+  const v = Number(rows[0][key]);
+  return Number.isFinite(v) ? v : null;
+}
+
+/** Assemble the "This week" recap's data from the raw query results. */
+function buildWeekRecap({
+  weekStart,
+  pvThisRows,
+  pvLastRows,
+  clickThisRows,
+  clickLastRows,
+  scrollThisRows,
+  scrollLastRows,
+  referrerCounts,
+}) {
+  return {
+    weekStart,
+    visitorsThis: firstRowNumber(pvThisRows, "sessions"),
+    visitorsLast: firstRowNumber(pvLastRows, "sessions"),
+    pageviewsThis: firstRowNumber(pvThisRows, "n"),
+    pageviewsLast: firstRowNumber(pvLastRows, "n"),
+    videoPlaysThis: firstRowNumber(clickThisRows, "n"),
+    videoPlaysLast: firstRowNumber(clickLastRows, "n"),
+    avgScrollThis: firstRowNumber(scrollThisRows, "avg_v"),
+    avgScrollLast: firstRowNumber(scrollLastRows, "avg_v"),
+    topChannel: topSourceChannel(referrerCounts),
+  };
+}
+
+/** Bucket a referrer hostname into a traffic-source channel. Pure function,
+ *  reused by both the "Traffic sources" and "Source quality" cards.
+ *  Unrecognized hostnames fall through as themselves (the raw hostname
+ *  becomes its own "channel") so the long tail is still visible. */
+function classifyReferrer(host) {
+  const raw = String(host || "");
+  const h = raw.toLowerCase();
+  if (h === "") return "Direct";
+  if (/google|bing|duckduckgo|yahoo|ecosia|brave/.test(h)) return "Search";
+  if (h.includes("instagram")) return "Instagram"; // incl. l.instagram.com
+  if (h.includes("tiktok")) return "TikTok";
+  if (h.includes("youtube") || h.includes("youtu.be")) return "YouTube";
+  if (h.includes("twitter") || h.includes("x.com") || h.includes("t.co")) return "X / Twitter";
+  if (h.includes("linkedin") || h.includes("lnkd.in")) return "LinkedIn";
+  if (h.includes("reddit")) return "Reddit"; // incl. out.reddit.com
+  if (h.includes("facebook")) return "Facebook"; // incl. lm./l.facebook.com
+  if (h.includes("threads.net")) return "Threads";
+  return raw;
+}
+
+/** Group raw pageview-referrer counts into per-channel totals, sorted by
+ *  count desc. Shared by the "Traffic sources" card and the "This week"
+ *  top-source line. */
+function groupReferrerChannels(referrerCounts) {
+  if (!referrerCounts || referrerCounts.length === 0) return [];
+
+  const byChannel = new Map();
+  for (const r of referrerCounts) {
+    const n = Number(r.n) || 0;
+    const channel = classifyReferrer(r.referrer);
+    byChannel.set(channel, (byChannel.get(channel) || 0) + n);
+  }
+
+  return [...byChannel.entries()]
+    .map(([channel, count]) => ({ channel, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/** Group raw pageview-referrer counts into channels for the "Traffic
+ *  sources" card. Returns `barRows`-shaped rows (label/count) sorted by
+ *  count desc, with each channel's share of total baked into the label. */
+function buildTrafficSources(referrerCounts) {
+  const channels = groupReferrerChannels(referrerCounts);
+  const total = channels.reduce((sum, c) => sum + c.count, 0);
+  return channels.map((c) => ({
+    label: `${c.channel} — ${total ? Math.round((100 * c.count) / total) : 0}%`,
+    count: c.count,
+  }));
+}
+
+/** The single busiest channel by pageview count, or null when there's no
+ *  data. Used by the "This week" recap's "Top source" line. */
+function topSourceChannel(referrerCounts) {
+  const channels = groupReferrerChannels(referrerCounts);
+  return channels.length ? channels[0].channel : null;
+}
+
+/** Join session→referrer, session→wall-clicks, and session→scroll-depth
+ *  into a per-channel engagement summary for the "Source quality" card. */
+function buildSourceQuality(sessionReferrers, sessionClicks, sessionScroll) {
+  if (!sessionReferrers || sessionReferrers.length === 0) return [];
+
+  const clicksBySession = new Map((sessionClicks || []).map((r) => [r.session, Number(r.clicks) || 0]));
+  const depthBySession = new Map((sessionScroll || []).map((r) => [r.session, Number(r.depth) || 0]));
+
+  const byChannel = new Map(); // channel -> { sessions, clicks, depthSum, depthCount }
+  for (const r of sessionReferrers) {
+    const channel = classifyReferrer(r.referrer);
+    const bucket = byChannel.get(channel) || { sessions: 0, clicks: 0, depthSum: 0, depthCount: 0 };
+    bucket.sessions += 1;
+    bucket.clicks += clicksBySession.get(r.session) || 0;
+    if (depthBySession.has(r.session)) {
+      bucket.depthSum += depthBySession.get(r.session);
+      bucket.depthCount += 1;
+    }
+    byChannel.set(channel, bucket);
+  }
+
+  return [...byChannel.entries()]
+    .map(([channel, b]) => ({
+      channel,
+      sessions: b.sessions,
+      avgScroll: b.depthCount ? Math.round(b.depthSum / b.depthCount) : null,
+      clicksPerSession: Math.round((b.clicks / b.sessions) * 10) / 10,
+    }))
+    .sort((a, b) => b.sessions - a.sessions);
+}
+
 async function renderStatsPage(env, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+
+  const nowMs = Date.now();
+  const weekStart = startOfWeekTorontoMs(nowMs);
+  const lastWeekStart = weekStart - 7 * 24 * 60 * 60 * 1000;
 
   const [
     totals,
@@ -473,9 +735,19 @@ async function renderStatsPage(env, days) {
     daily,
     devices,
     countries,
-    referrers,
     avgTimeOnPage,
     avgScrollDepth,
+    referrerCounts,
+    sessionReferrers,
+    sessionWallClicks,
+    sessionScrollDepth,
+    pvThisWeek,
+    pvLastWeek,
+    clicksThisWeek,
+    clicksLastWeek,
+    scrollThisWeek,
+    scrollLastWeek,
+    weekReferrerCounts,
   ] = await Promise.all([
     queryTotals(env, cutoff),
     queryTopLabels(env, cutoff, "wall_click", 15),
@@ -485,10 +757,33 @@ async function renderStatsPage(env, days) {
     queryDaily(env, cutoff),
     queryPageviewDimension(env, cutoff, "device", 10),
     queryPageviewDimension(env, cutoff, "country", 10),
-    queryPageviewDimension(env, cutoff, "referrer", 10),
     queryAvgValue(env, cutoff, "time_on_page"),
     queryAvgValue(env, cutoff, "scroll_depth"),
+    queryReferrerCounts(env, cutoff),
+    querySessionReferrers(env, cutoff),
+    querySessionWallClicks(env, cutoff),
+    querySessionScrollDepth(env, cutoff),
+    queryEventWindow(env, "pageview", weekStart, null),
+    queryEventWindow(env, "pageview", lastWeekStart, weekStart),
+    queryEventWindow(env, "wall_click", weekStart, null),
+    queryEventWindow(env, "wall_click", lastWeekStart, weekStart),
+    queryAvgValueWindow(env, "scroll_depth", weekStart, null),
+    queryAvgValueWindow(env, "scroll_depth", lastWeekStart, weekStart),
+    queryReferrerCounts(env, weekStart),
   ]);
+
+  const trafficSources = buildTrafficSources(referrerCounts);
+  const sourceQuality = buildSourceQuality(sessionReferrers, sessionWallClicks, sessionScrollDepth);
+  const weekRecap = buildWeekRecap({
+    weekStart,
+    pvThisRows: pvThisWeek,
+    pvLastRows: pvLastWeek,
+    clickThisRows: clicksThisWeek,
+    clickLastRows: clicksLastWeek,
+    scrollThisRows: scrollThisWeek,
+    scrollLastRows: scrollLastWeek,
+    referrerCounts: weekReferrerCounts,
+  });
 
   return renderPage({
     days,
@@ -500,9 +795,11 @@ async function renderStatsPage(env, days) {
     daily,
     devices,
     countries,
-    referrers,
+    trafficSources,
+    sourceQuality,
     avgTimeOnPage,
     avgScrollDepth,
+    weekRecap,
   });
 }
 
@@ -558,7 +855,76 @@ function statBlock(label, formatted) {
   return `<div class="stat">${value}<div class="stat-label">${escapeHtml(label)}</div></div>`;
 }
 
-function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, referrers, avgTimeOnPage, avgScrollDepth }) {
+/** Format a "vs last week" delta as colored markup. Every metric (including
+ *  the scroll-depth average) uses the same round(100*(this-last)/last)
+ *  formula. Output is fixed markup with only a number interpolated, so it's
+ *  safe to inline without escaping. */
+function formatWeekDelta(current, previous) {
+  if (previous === 0 && current === 0) return `<span class="delta delta-flat">—</span>`;
+  if (previous === 0) return `<span class="delta delta-up">new</span>`;
+  const pct = Math.round((100 * (current - previous)) / previous);
+  if (pct > 0) return `<span class="delta delta-up">▲ ${pct}%</span>`;
+  if (pct < 0) return `<span class="delta delta-down">▼ ${Math.abs(pct)}%</span>`;
+  return `<span class="delta delta-flat">0%</span>`;
+}
+
+/** One "This week" stat tile: big number, label, and a colored delta vs
+ *  last week. Reuses the existing `.stat` / `.stat-value` / `.stat-label`
+ *  look from the Engagement card. Renders "—" for a metric whose query
+ *  failed or came back empty, without touching the rest of the panel. */
+function weekStatTile(label, current, previous, formatValue) {
+  const value = current == null ? "—" : escapeHtml(formatValue(current));
+  const delta =
+    current == null || previous == null
+      ? `<span class="delta delta-flat">—</span>`
+      : formatWeekDelta(current, previous);
+  return `<div class="stat">
+    <div class="stat-value">${value}</div>
+    <div class="stat-label">${escapeHtml(label)} ${delta}</div>
+  </div>`;
+}
+
+/** The "This week" recap panel: four stat tiles vs. the prior Monday-start
+ *  week, plus the busiest traffic-source channel. Always Monday-anchored in
+ *  America/Toronto — independent of the ?days= selector used below it. */
+function renderWeekRecap(recap) {
+  const rangeLabel = formatWeekStartLabel(recap.weekStart);
+  const topSource = recap.topChannel ? escapeHtml(recap.topChannel) : "—";
+  return `
+  <section class="card week-recap">
+    <h2>This week</h2>
+    <p class="sub week-recap-sub">${escapeHtml(rangeLabel)} – now · vs previous week</p>
+    <div class="stat-row">
+      ${weekStatTile("Visitors", recap.visitorsThis, recap.visitorsLast, (v) => v.toLocaleString())}
+      ${weekStatTile("Pageviews", recap.pageviewsThis, recap.pageviewsLast, (v) => v.toLocaleString())}
+      ${weekStatTile("Video plays", recap.videoPlaysThis, recap.videoPlaysLast, (v) => v.toLocaleString())}
+      ${weekStatTile("Avg scroll", recap.avgScrollThis, recap.avgScrollLast, (v) => `${Math.round(v)}%`)}
+    </div>
+    <p class="week-recap-source">Top source: <strong>${topSource}</strong></p>
+  </section>`;
+}
+
+/** One row per channel for the "Source quality" card: sessions, avg scroll
+ *  depth, and wall-clicks-per-session. Not a `barRows` list — there's no
+ *  single "value" to bar-chart, just a few numbers side by side. */
+function sourceQualityRows(channels) {
+  if (!channels || channels.length === 0) {
+    return `<p class="empty">No data yet.</p>`;
+  }
+  return channels
+    .map((c) => {
+      const scroll = c.avgScroll == null ? "n/a" : `${c.avgScroll}%`;
+      const sessionWord = c.sessions === 1 ? "session" : "sessions";
+      return `
+        <div class="quality-row">
+          <span class="quality-channel">${escapeHtml(c.channel)}</span>
+          <span class="quality-detail">${c.sessions} ${sessionWord} · ${scroll} scroll · ${c.clicksPerSession.toFixed(1)} clicks/session</span>
+        </div>`;
+    })
+    .join("");
+}
+
+function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, trafficSources, sourceQuality, avgTimeOnPage, avgScrollDepth, weekRecap }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -610,6 +976,19 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
   .daily-bar { flex: 1; background: linear-gradient(180deg, #eb8a3a, #d94f30); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
   .daily-labels { display: flex; gap: 3px; margin-top: .35rem; }
   .daily-labels span { flex: 1; text-align: center; font-size: .62rem; color: #6b6255; font-family: ui-monospace, monospace; }
+  .quality-row { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding: .4rem 0; border-bottom: 1px solid #1c1812; font-size: .82rem; }
+  .quality-row:last-child { border-bottom: none; }
+  .quality-channel { color: #cfc7b8; font-family: ui-monospace, monospace; white-space: nowrap; }
+  .quality-detail { color: #9c927f; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .week-recap { margin-bottom: 1.75rem; border-color: #3a2c1c; background: #161009; }
+  .week-recap .stat-row { margin-top: .9rem; gap: 2.5rem; }
+  .week-recap-sub { color: #837a6d; font-size: .8rem; margin: 0 0 .25rem; font-family: ui-monospace, monospace; }
+  .week-recap-source { color: #b8ae9d; font-size: .82rem; margin: 1.1rem 0 0; }
+  .week-recap-source strong { color: #e8e3da; }
+  .delta { font-weight: 600; font-variant-numeric: tabular-nums; margin-left: .35rem; text-transform: none; letter-spacing: 0; }
+  .delta-up { color: #7fb069; }
+  .delta-down { color: #d94f30; }
+  .delta-flat { color: #5f584c; }
   footer { max-width: 960px; margin: 2.5rem auto 0; color: #5f584c; font-size: .78rem; font-family: ui-monospace, monospace; }
   a { color: #eb8a3a; }
 </style>
@@ -618,6 +997,9 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
 <div class="container">
   <h1>Portfolio Analytics</h1>
   <p class="sub">last ${days} day${days === 1 ? "" : "s"} · portfolio.relatedshortschanger.com</p>
+
+  ${renderWeekRecap(weekRecap)}
+
   <nav class="nav">${daysNav(days)}</nav>
 
   <div class="grid">
@@ -670,8 +1052,13 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
     </div>
 
     <div class="card">
-      <h2>Top referrers</h2>
-      ${barRows(referrers, "value", "count")}
+      <h2>Traffic sources</h2>
+      ${barRows(trafficSources, "label", "count")}
+    </div>
+
+    <div class="card">
+      <h2>Source quality</h2>
+      ${sourceQualityRows(sourceQuality)}
     </div>
   </div>
 </div>
