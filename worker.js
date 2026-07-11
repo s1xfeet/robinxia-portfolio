@@ -2,8 +2,11 @@
  * Cloudflare Worker — static asset passthrough + first-party analytics.
  *
  * Routes:
- *   POST /api/track   — collect events into D1 (binding: DB, table `events`)
- *   GET  /stats        — private dashboard, gated by ?key= against env.STATS_KEY
+ *   POST /api/track    — collect events into D1 (binding: DB, table `events`)
+ *   GET  /stats         — private dashboard, gated by a signed `rx_stats`
+ *                          cookie; shows a password page (401) when absent
+ *   POST /stats         — password-page login submit; sets the cookie
+ *   GET  /stats/logout  — clears the cookie
  *   *    everything else — serve the static site via env.ASSETS
  *
  * The `events` table auto-creates itself (lazily, on first write) — no manual
@@ -25,8 +28,14 @@ export default {
     if (url.pathname === "/api/track") {
       return handleTrack(request, env);
     }
+    if (url.pathname === "/stats/logout") {
+      return handleStatsLogout(request);
+    }
     if (url.pathname === "/stats") {
-      return handleStats(url, env);
+      if (request.method === "POST") {
+        return handleStatsLogin(request, env);
+      }
+      return handleStats(request, url, env);
     }
 
     if (!env.ASSETS) {
@@ -197,25 +206,165 @@ function truncateField(s) {
 }
 
 // ---------------------------------------------------------------------------
-// /stats
+// /stats — cookie-based auth
 // ---------------------------------------------------------------------------
 
-async function handleStats(url, env) {
-  const key = url.searchParams.get("key") || "";
-  if (!env.STATS_KEY || !timingSafeEqual(key, env.STATS_KEY)) {
-    // 404, not 401 — don't advertise that this page exists.
-    return new Response("Not found", { status: 404 });
+const STATS_COOKIE_NAME = "rx_stats";
+const STATS_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, in seconds
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store",
+  "X-Robots-Tag": "noindex",
+};
+
+async function handleStats(request, url, env) {
+  if (!(await isStatsAuthed(request, env))) {
+    return renderPasswordPage({ status: 401 });
   }
 
-  const headers = {
-    "Content-Type": "text/html; charset=utf-8",
-    "Cache-Control": "no-store",
-    "X-Robots-Tag": "noindex",
-  };
-
   const days = clampDays(url.searchParams.get("days"));
-  const html = await renderStatsPage(env, days, key);
-  return new Response(html, { status: 200, headers });
+  const html = await renderStatsPage(env, days);
+  return new Response(html, {
+    status: 200,
+    headers: { ...NO_STORE_HEADERS, "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+/** Login submit: POST /stats with a urlencoded `k` field. Sets the auth
+ *  cookie on success; re-renders the password page (401, no cookie) on
+ *  failure. Never echoes the submitted value back into any response. */
+async function handleStatsLogin(request, env) {
+  let submitted = "";
+  try {
+    const raw = await request.text();
+    submitted = new URLSearchParams(raw).get("k") || "";
+  } catch {
+    submitted = "";
+  }
+
+  if (!env.STATS_KEY || !submitted || !timingSafeEqual(submitted, env.STATS_KEY)) {
+    return renderPasswordPage({ status: 401, incorrect: true });
+  }
+
+  const token = await statsToken(env.STATS_KEY);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...NO_STORE_HEADERS,
+      Location: "/stats",
+      "Set-Cookie": buildStatsCookie(token, {
+        maxAge: STATS_COOKIE_MAX_AGE,
+        secure: isHttpsRequest(request),
+      }),
+    },
+  });
+}
+
+function handleStatsLogout(request) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...NO_STORE_HEADERS,
+      Location: "/stats",
+      "Set-Cookie": buildStatsCookie("", {
+        maxAge: 0,
+        secure: isHttpsRequest(request),
+      }),
+    },
+  });
+}
+
+/** True when the request carries a valid `rx_stats` cookie. False (never
+ *  throws) when STATS_KEY isn't configured — config state is never leaked. */
+async function isStatsAuthed(request, env) {
+  if (!env.STATS_KEY) return false;
+  const cookie = getCookie(request, STATS_COOKIE_NAME);
+  if (!cookie) return false;
+  const expected = await statsToken(env.STATS_KEY);
+  return timingSafeEqual(cookie, expected);
+}
+
+/** Derive the cookie token from the secret so the raw key is never stored
+ *  client-side: hex(SHA-256(STATS_KEY + "|rx-stats-v1")). */
+async function statsToken(statsKey) {
+  const bytes = new TextEncoder().encode(`${statsKey}|rx-stats-v1`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getCookie(request, name) {
+  const header = request.headers.get("Cookie") || "";
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() !== name) continue;
+    try {
+      return decodeURIComponent(part.slice(eq + 1).trim());
+    } catch {
+      return part.slice(eq + 1).trim();
+    }
+  }
+  return null;
+}
+
+/** `Secure` cookies are dropped by browsers over plain http, and `wrangler
+ *  dev` serves http://localhost — so only set `Secure` when the request
+ *  actually arrived over https (always true in production, behind
+ *  Cloudflare's TLS termination). */
+function isHttpsRequest(request) {
+  if (new URL(request.url).protocol === "https:") return true;
+  return (request.headers.get("x-forwarded-proto") || "").toLowerCase() === "https";
+}
+
+function buildStatsCookie(value, { maxAge, secure }) {
+  const attrs = [`${STATS_COOKIE_NAME}=${value}`, "HttpOnly"];
+  if (secure) attrs.push("Secure");
+  attrs.push("SameSite=Lax", "Path=/stats", `Max-Age=${maxAge}`);
+  return attrs.join("; ");
+}
+
+/** Minimal, unbranded password page. Deliberately has no title, hint, or
+ *  link that would advertise what it protects. */
+function renderPasswordPage({ status, incorrect = false }) {
+  const note = incorrect ? `<p class="note">Incorrect.</p>` : "";
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0a0908; color: #e8e3da; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  form { display: flex; flex-direction: column; gap: .6rem; align-items: center; }
+  input[type="password"] {
+    background: #131110; border: 1px solid #241f18; border-radius: 6px;
+    color: #e8e3da; padding: .6rem .8rem; font-size: 1rem; width: 220px;
+  }
+  input[type="password"]:focus { outline: none; border-color: #d94f30; }
+  button {
+    background: #d94f30; color: #0a0908; border: none; border-radius: 6px;
+    padding: .55rem 1rem; font-size: .9rem; font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #eb8a3a; }
+  .note { color: #837a6d; font-size: .8rem; margin: 0; }
+</style>
+</head>
+<body>
+<form method="POST" action="/stats">
+  <input type="password" name="k" autofocus>
+  <button type="submit">Enter</button>
+  ${note}
+</form>
+</body>
+</html>`;
+  return new Response(html, {
+    status,
+    headers: { ...NO_STORE_HEADERS, "Content-Type": "text/html; charset=utf-8" },
+  });
 }
 
 /** Simple length + char-by-char comparison. Not cryptographically hardened,
@@ -312,7 +461,7 @@ function queryDaily(env, cutoff) {
   );
 }
 
-async function renderStatsPage(env, days, key) {
+async function renderStatsPage(env, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 
   const [
@@ -343,7 +492,6 @@ async function renderStatsPage(env, days, key) {
 
   return renderPage({
     days,
-    key,
     totals,
     wallClicks,
     outbound,
@@ -358,12 +506,12 @@ async function renderStatsPage(env, days, key) {
   });
 }
 
-function daysNav(active, key) {
+function daysNav(active) {
   return [1, 7, 30, 90]
     .map((d) =>
       d === active
         ? `<span class="pill pill-active">${d}d</span>`
-        : `<a class="pill" href="/stats?key=${encodeURIComponent(key)}&days=${d}">${d}d</a>`
+        : `<a class="pill" href="/stats?days=${d}">${d}d</a>`
     )
     .join("");
 }
@@ -410,7 +558,7 @@ function statBlock(label, formatted) {
   return `<div class="stat">${value}<div class="stat-label">${escapeHtml(label)}</div></div>`;
 }
 
-function renderPage({ days, key, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, referrers, avgTimeOnPage, avgScrollDepth }) {
+function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, referrers, avgTimeOnPage, avgScrollDepth }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -470,7 +618,7 @@ function renderPage({ days, key, totals, wallClicks, outbound, sections, scrollD
 <div class="container">
   <h1>Portfolio Analytics</h1>
   <p class="sub">last ${days} day${days === 1 ? "" : "s"} · portfolio.relatedshortschanger.com</p>
-  <nav class="nav">${daysNav(days, key)}</nav>
+  <nav class="nav">${daysNav(days)}</nav>
 
   <div class="grid">
     <div class="card">
@@ -527,7 +675,7 @@ function renderPage({ days, key, totals, wallClicks, outbound, sections, scrollD
     </div>
   </div>
 </div>
-<footer>Cookieless, first-party analytics — stored in Cloudflare D1 · free tier. No time-based retention limit.</footer>
+<footer>Cookieless, first-party analytics — stored in Cloudflare D1 · free tier. No time-based retention limit. · <a href="/stats/logout">Sign out</a></footer>
 </body>
 </html>`;
 }

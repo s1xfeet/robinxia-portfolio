@@ -102,19 +102,32 @@ Worker needs now — there's no API token or account ID to create or manage.
 Once the secret is saved (Cloudflare redeploys automatically), visit:
 
 ```
-https://portfolio.relatedshortschanger.com/stats?key=YOUR_STATS_KEY
+https://portfolio.relatedshortschanger.com/stats
 ```
 
-...using the exact `STATS_KEY` value you set. You'll see totals by event
-type, top video-wall clicks, top outbound link clicks, section views, scroll
-depth, daily pageviews, devices, top countries, and top referrers. Use the
-`?days=1`, `?days=7`, `?days=30`, or `?days=90` links at the top of the page
-to change the time window (any integer from 1 to 365 works via the URL, e.g.
-`&days=180`).
+You'll land on a plain password box — enter your `STATS_KEY` once. On
+success the Worker sets a secure, `HttpOnly` cookie (`rx_stats`) and keeps
+you signed in for 30 days, so you won't need to re-enter it on every visit.
+The key itself is never placed in the URL — it never lands in your browser
+history, in a bookmark, or in Cloudflare's request logs, which is the whole
+point of this flow (the old `?key=...` query-parameter link no longer works
+at all; it now just shows the password box like any other unauthenticated
+visit).
 
-If you forget your `STATS_KEY` or visit `/stats` without the right one, you
-just get a plain "Not found" page — this is intentional, so the dashboard's
-existence isn't advertised to random visitors or bots.
+Once signed in you'll see totals by event type, top video-wall clicks, top
+outbound link clicks, section views, scroll depth, daily pageviews, devices,
+top countries, and top referrers. Use the `1d`/`7d`/`30d`/`90d` links at the
+top of the page to change the time window (any integer from 1 to 365 works
+via the URL, e.g. `?days=180`) — no key is needed for these once you're
+signed in.
+
+To sign out (e.g. on a shared machine), click **Sign out** in the dashboard
+footer, or visit `/stats/logout` directly — this clears the cookie.
+
+If you forget your `STATS_KEY`, get the password wrong, or haven't signed in
+yet, `/stats` just shows the plain password box (HTTP 401) — no title, no
+hint about what it protects, nothing that would advertise the dashboard's
+existence to random visitors or bots.
 
 ## Local development
 
@@ -140,3 +153,7 @@ separate.
 
 You'll need a local `.dev.vars` file (already ignored by git and by asset
 upload) with `STATS_KEY=something` if you want to test the dashboard locally.
+The repo's `.dev.vars` already has `STATS_KEY=localtest` set up for this.
+Open `http://localhost:8787/stats` and enter `localtest` in the password box
+— note the auth cookie only gets the `Secure` attribute over https, so it
+still works fine over plain `http://localhost` in dev.
