@@ -401,6 +401,34 @@
     gap: clamp(0.6rem, 1.4vh, 1rem);
     padding-block: 4.5rem 2rem; /* header is shorter here */
   }
+
+  /* On a phone the wall sits directly under the hero overlay text with no
+     room to keep them apart, so the landing scrim needs to sit darker than
+     desktop's ~0.87 floor. Same calc shape, still driven by --wall-p: ~0.94
+     at landing (buries the tiles further back), ~0.08 fully scrolled so the
+     wall still reads vivid once the overlay has faded out. */
+  .wall-scrim {
+    opacity: calc(0.94 - 0.86 * var(--wall-p, 0));
+  }
+
+  /* At this width the tiles are texture, not readable copy — the labels are
+     too small to read anyway and they collide with the hero overlay text
+     (name/roles up top, "roll tape" cue at the bottom). Hide them outright;
+     each tile is still an aria-labelled link, so this is a visual-only cut
+     and accessibility is unaffected. */
+  .tile__client,
+  .tile__label {
+    display: none;
+  }
+
+  /* Extra insurance now that the scrim is the only thing separating overlay
+     copy from bright frames underneath — same tight, high-contrast shadow
+     idiom already used for tile labels above. */
+  .hero-meta,
+  .hero-scene,
+  .hero-cue {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  }
 }
 
 /* ---- reduced motion ---------------------------------------------- */

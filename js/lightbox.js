@@ -18,8 +18,42 @@ export function initLightbox() {
   let overlay = null;
   let lastFocus = null;
 
+  // queried live (not cached) since the trap only ever runs against the
+  // close button + iframe, but this keeps it correct if the markup grows
+  function focusableElements() {
+    if (!overlay) return [];
+    return Array.from(
+      overlay.querySelectorAll('button, iframe, [href], [tabindex]:not([tabindex="-1"])')
+    );
+  }
+
+  function trapFocus(event) {
+    const items = focusableElements();
+    if (items.length === 0) return;
+
+    const first = items[0];
+    const last = items[items.length - 1];
+
+    // focus drifted outside the overlay (e.g. browser chrome had it) -> pull
+    // it back to the close button instead of letting Tab escape further
+    if (!overlay.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   const onKey = (event) => {
     if (event.key === "Escape") close();
+    if (event.key === "Tab") trapFocus(event);
   };
 
   function close() {

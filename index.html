@@ -5,6 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Robin Xia: Creative Director · Editor · Writer · Producer</title>
   <meta name="description" content="Robin Xia, Toronto-based video editor, writer, producer, and motion designer. Four years running always-on content operations for YouTube channels and creators.">
+  <link rel="canonical" href="https://portfolio.relatedshortschanger.com/">
+  <meta name="theme-color" content="#131318">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://portfolio.relatedshortschanger.com/">
+  <meta property="og:title" content="Robin Xia: Made to be watched.">
+  <meta property="og:description" content="Robin Xia, Toronto-based video editor, writer, producer, and motion designer. Four years running always-on content operations for YouTube channels and creators.">
+  <meta property="og:image" content="https://portfolio.relatedshortschanger.com/assets/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Robin Xia's portfolio title card reading Made to be watched, on a near-black background.">
+  <meta property="og:site_name" content="Robin Xia">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Robin Xia: Made to be watched.">
+  <meta name="twitter:description" content="Robin Xia, Toronto-based video editor, writer, producer, and motion designer. Four years running always-on content operations for YouTube channels and creators.">
+  <meta name="twitter:image" content="https://portfolio.relatedshortschanger.com/assets/og.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Robin Xia",
+    "jobTitle": "Creative Director / Editor / Writer / Producer",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Toronto"
+    },
+    "url": "https://portfolio.relatedshortschanger.com/",
+    "email": "mailto:robinxia706@gmail.com",
+    "sameAs": [
+      "https://www.linkedin.com/in/robin-linshen-xia/",
+      "https://ytjobs.co/talent/vitrine/111259"
+    ],
+    "knowsLanguage": ["English", "Chinese"]
+  }
+  </script>
+
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="preload" href="assets/fonts/BebasNeue-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -37,8 +75,19 @@
         <li><a href="#testimonial">Reference</a></li>
       </ul>
     </nav>
+    <button type="button" class="btn menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav">Menu</button>
     <a class="btn" href="mailto:robinxia706@gmail.com">Email me</a>
   </header>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Section navigation" hidden>
+    <ul class="mobile-nav__list">
+      <li class="mobile-nav__item"><a class="mobile-nav__link" href="#work"><span class="mobile-nav__index mono">01</span>Work</a></li>
+      <li class="mobile-nav__item"><a class="mobile-nav__link" href="#writing"><span class="mobile-nav__index mono">02</span>Writing</a></li>
+      <li class="mobile-nav__item"><a class="mobile-nav__link" href="#builds"><span class="mobile-nav__index mono">03</span>Builds</a></li>
+      <li class="mobile-nav__item"><a class="mobile-nav__link" href="#about"><span class="mobile-nav__index mono">04</span>About</a></li>
+      <li class="mobile-nav__item"><a class="mobile-nav__link" href="#testimonial"><span class="mobile-nav__index mono">05</span>Reference</a></li>
+      <li class="mobile-nav__item"><a class="mobile-nav__link mobile-nav__link--email" href="mailto:robinxia706@gmail.com">robinxia706@gmail.com</a></li>
+    </ul>
+  </nav>
 
   <main>
     <section id="hero" aria-labelledby="hero-title" class="section section--hero">
@@ -428,7 +477,8 @@
         <div class="contact-stage">
           <p class="contact-line dim" data-reveal>I'm applying to digital-media teams that ship constantly. If that's yours, my inbox is open, and the reel is one email away.</p>
           <a class="contact-email" href="mailto:robinxia706@gmail.com" data-reveal data-reveal-delay="1">robinxia706<span class="contact-at">@</span>gmail.com</a>
-          <div class="contact-links" data-reveal data-reveal-delay="2">
+          <button type="button" class="btn contact-copy" id="contact-copy" aria-live="polite" data-reveal data-reveal-delay="2">Copy address</button>
+          <div class="contact-links" data-reveal data-reveal-delay="3">
             <a class="btn" href="https://www.linkedin.com/in/robin-linshen-xia/" target="_blank" rel="me noopener">LinkedIn</a>
             <a class="btn" href="https://ytjobs.co/talent/vitrine/111259" target="_blank" rel="me noopener">YTjobs</a>
           </div>

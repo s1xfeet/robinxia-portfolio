@@ -32,6 +32,17 @@
   color: var(--color-rec);
 }
 
+.contact-copy {
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
+}
+
+/* Mailto silently does nothing for webmail users, so the label flips to
+   confirm the copy actually landed before settling back. */
+.contact-copy.is-copied {
+  color: var(--color-tc);
+  border-color: var(--color-tc);
+}
+
 .contact-links {
   display: flex;
   flex-wrap: wrap;

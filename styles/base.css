@@ -14,6 +14,22 @@ html {
   scroll-padding-top: 5.5rem;
 }
 
+/* Lenis drives window scroll directly; native scroll-behavior would fight it
+   while active. Falls back to the rule above when Lenis never instantiates
+   (reduced motion, Save-Data). */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -135,6 +151,13 @@ a {
 
 /* ---- site header --------------------------------------------- */
 
+:root {
+  /* Rendered header height, so the mobile nav overlay below can clear it
+     instead of covering it (the overlay's z-index outranks the header's,
+     so overlap would otherwise bury the toggle under the overlay). */
+  --header-h: 4rem;
+}
+
 .site-header {
   position: fixed;
   inset: 0 0 auto 0;
@@ -142,6 +165,7 @@ a {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  min-height: var(--header-h);
   padding: 0.9rem var(--space-gutter);
   /* Near-solid chrome, no backdrop-filter: a fixed blurred backdrop over the
      hero videos and drifting carousels re-rasterizes every scroll frame, which
@@ -210,6 +234,11 @@ a {
   padding: 0.6em 1.2em;
 }
 
+/* Hidden above 700px: the full .site-nav covers the same job there. */
+.menu-toggle {
+  display: none;
+}
+
 /* Header degrades gracefully on small screens */
 @media (max-width: 700px) {
   .site-nav,
@@ -217,8 +246,108 @@ a {
     display: none;
   }
 
-  .site-header {
-    justify-content: space-between;
+  /* .site-nav normally carries the margin-left: auto that splits the header
+     into a left group (monogram) and a right group (nav + email); with nav
+     hidden the toggle inherits that job so it lands next to Email me. */
+  .menu-toggle {
+    display: inline-block;
+    margin-left: auto;
+  }
+}
+
+/* ---- mobile nav overlay ---------------------------------------- */
+
+.mobile-nav {
+  position: fixed;
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1040;
+  overflow-y: auto;
+  padding: clamp(1.5rem, 6vw, 3rem) var(--space-gutter);
+  /* fully opaque: at 97% the white hero statement still ghosts through
+     over near-black, which reads as smudged text behind the menu */
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.mobile-nav[hidden] {
+  display: none;
+}
+
+.mobile-nav__list {
+  list-style: none;
+  padding: 0;
+}
+
+.mobile-nav__item {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.mobile-nav__item:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav__link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding-block: clamp(0.9rem, 4vw, 1.4rem);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 9vw, 3.5rem);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  text-decoration: none;
+  color: var(--color-text);
+  opacity: 0;
+  transform: translateY(16px);
+  animation: mobile-nav-in var(--duration-reveal) var(--ease-cine) forwards;
+  transition: color var(--duration-fast) ease;
+}
+
+.mobile-nav__link:hover,
+.mobile-nav__link:focus-visible {
+  color: var(--color-tc);
+}
+
+.mobile-nav__index {
+  flex: none;
+  color: var(--color-tc);
+}
+
+.mobile-nav__link--email {
+  font-size: clamp(1.3rem, 6vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+/* Stagger the rise + fade: each link picks up the delay steps already used
+   for scroll reveals elsewhere (atmosphere.css), just applied per nth-child
+   since this overlay opens on demand rather than on scroll. */
+.mobile-nav__item:nth-child(1) .mobile-nav__link { animation-delay: 80ms; }
+.mobile-nav__item:nth-child(2) .mobile-nav__link { animation-delay: 140ms; }
+.mobile-nav__item:nth-child(3) .mobile-nav__link { animation-delay: 200ms; }
+.mobile-nav__item:nth-child(4) .mobile-nav__link { animation-delay: 260ms; }
+.mobile-nav__item:nth-child(5) .mobile-nav__link { animation-delay: 320ms; }
+.mobile-nav__item:nth-child(6) .mobile-nav__link { animation-delay: 380ms; }
+
+@keyframes mobile-nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav__link {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
 
