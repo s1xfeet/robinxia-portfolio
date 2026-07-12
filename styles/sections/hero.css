@@ -250,6 +250,20 @@
   transform: translateY(-6px) scale(1.14);
 }
 
+/* The top row must never move toward the fixed header: its hover lift is
+   dropped (growth already reads through the top-pinned scale + shadow).
+   This is the fallback path — the proximity field's inline transforms
+   never lift at all. */
+.wall-row:nth-child(1) .tile[href]:hover,
+.wall-row:nth-child(1) .tile[href]:focus-visible {
+  transform: scale(1.05);
+}
+
+.wall-row:nth-child(1) .tile--tall[href]:hover,
+.wall-row:nth-child(1) .tile--tall[href]:focus-visible {
+  transform: scale(1.14);
+}
+
 .tile[href]:focus-visible {
   outline: 2px solid var(--color-tc);
   outline-offset: 2px;
