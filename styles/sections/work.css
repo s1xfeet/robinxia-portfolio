@@ -44,12 +44,6 @@
   line-height: 1.5;
 }
 
-/* the intro is followed immediately by the full-bleed jack scene; give it room
-   to breathe so its edge does not collide with the scene's background */
-.section--work .section-body > .wrap:first-child {
-  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
-}
-
 /* --- shared scene copy ------------------------------------------- */
 
 .work-status {
