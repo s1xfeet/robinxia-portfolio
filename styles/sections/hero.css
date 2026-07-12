@@ -214,6 +214,18 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
+/* Growth stays inside the wall: outer rows scale away from the wall's
+   edges (top row grows downward, bottom row upward), so a swelling tile —
+   proximity field or hover — never rides under the fixed header or off
+   the bottom edge. The middle row keeps its centered swell. */
+.wall-row:nth-child(1) .tile {
+  transform-origin: 50% 0%;
+}
+
+.wall-row:nth-child(3) .tile {
+  transform-origin: 50% 100%;
+}
+
 /* interactive states - only reachable once .wall is live.
    Hover / focus reads as pulling the "selected take" off a monitor wall:
    the tile lifts toward the viewer, the rec-red frame ignites and casts
