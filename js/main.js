@@ -42,6 +42,9 @@ import("./contact.js")
 import("./motion/cursor.js")
   .then((mod) => mod.initCursor?.())
   .catch(() => {});
+import("./motion/field.js")
+  .then((mod) => mod.initTileField?.())
+  .catch(() => {});
 import("./motion/extras.js")
   .then((mod) => mod.initExtras?.())
   .catch(() => {});

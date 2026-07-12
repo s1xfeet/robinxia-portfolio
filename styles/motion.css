@@ -121,6 +121,22 @@
   }
 }
 
+/* ---- 2c. proximity field (Apple-Watch-library wall) ---------------- */
+
+/* js/motion/field.js drives per-frame inline transforms on the tiles, so
+   the transform channel must leave the transition list — otherwise every
+   frame write gets re-smoothed by the 180ms hover transition and the
+   bubble lags into mush. Everything else keeps its transition. The CSS
+   :hover scale rules remain as the fallback for coarse pointers and
+   reduced motion, where the field never initialises. */
+.wall.has-field .tile {
+  transition:
+    border-color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease,
+    filter var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
 /* ---- 3. cursor language ------------------------------------------- */
 
 /* Augments the native cursor (never replaces it): a lerped viewfinder
