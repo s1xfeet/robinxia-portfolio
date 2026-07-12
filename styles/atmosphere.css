@@ -66,6 +66,8 @@ body::after {
 }
 
 .slate__kicker {
+  max-width: none; /* it's a short mono label, not reading copy — base.css caps
+                       all <p> at 65ch, which boxed it in and broke centering */
   font-family: var(--font-mono);
   font-size: var(--text-mono-label);
   letter-spacing: 0.25em;

@@ -5,6 +5,13 @@
    background and click to open it in the lightbox. Below the two scenes,
    the cutting log lists five smaller engagements in normal flow. */
 
+/* Work is the only section that opens on a full-bleed video wall rather
+   than body copy, so its slate reads better centered over that wall than
+   left-hugging the content column like every other section's slate. */
+.section--work .slate {
+  text-align: center;
+}
+
 /* client name -> YouTube channel; a record-red underline sweeps in on
    hover/focus. Applies in scene headings and cutting-log rows. */
 .client-link {
@@ -582,9 +589,13 @@
 
 .work-log {
   margin-top: calc(var(--space-section) / 2.5);
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) 1fr repeat(3, minmax(0, max-content));
+  column-gap: 2.5rem;
 }
 
 .work-log-label {
+  grid-column: 1 / -1;
   color: var(--color-tc);
   letter-spacing: 0.25em;
   margin-bottom: 1rem;
@@ -592,7 +603,8 @@
 
 .work-row {
   display: grid;
-  grid-template-columns: minmax(11rem, 15rem) 1fr auto;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   gap: 0.75rem 2.5rem;
   padding-block: 1.5rem;
   border-top: 1px solid var(--color-hairline);
@@ -628,11 +640,13 @@
 }
 
 .work-metrics--row {
+  display: grid;
+  grid-column: 3 / 6;
+  grid-template-columns: subgrid;
   border: 0;
   padding: 0;
   margin: 0;
-  gap: 1rem 2rem;
-  justify-self: end;
+  column-gap: 2rem;
   text-align: right;
 }
 
@@ -654,6 +668,11 @@
   }
 
   .work-metrics--row {
+    grid-column: 1;
+    grid-template-columns: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
     justify-self: start;
     text-align: left;
   }
