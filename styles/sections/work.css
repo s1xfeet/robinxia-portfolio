@@ -590,7 +590,7 @@
 .work-log {
   margin-top: calc(var(--space-section) / 2.5);
   display: grid;
-  grid-template-columns: minmax(11rem, 15rem) 1fr repeat(3, minmax(0, max-content));
+  grid-template-columns: minmax(11rem, 15rem) 1fr minmax(0, max-content);
   column-gap: 2.5rem;
 }
 
@@ -640,14 +640,13 @@
 }
 
 .work-metrics--row {
-  display: grid;
-  grid-column: 3 / 6;
-  grid-template-columns: subgrid;
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 3;
   border: 0;
   padding: 0;
   margin: 0;
-  column-gap: 2rem;
-  text-align: right;
+  gap: 1rem 2rem;
 }
 
 /* --- responsive -------------------------------------------------- */
@@ -669,12 +668,6 @@
 
   .work-metrics--row {
     grid-column: 1;
-    grid-template-columns: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 2rem;
-    justify-self: start;
-    text-align: left;
   }
 
   .work-row {
