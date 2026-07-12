@@ -41,12 +41,15 @@
 
 /* ---- 2b. landing entrance: the wall blooms into place -------------- */
 
-/* One-shot choreography for the first landing. wall.js adds .wall--enter
-   around the first build and removes it after the entrance has played, so
-   resize rebuilds never replay it.
-     - iPhone-unlock springboard: at t=0 the whole wall sits gathered at
-       55% scale about its own center, dark, like a folder of apps a
-       moment before it springs open.
+/* One-shot choreography, armed at load and fired on scroll. wall.js
+   builds the wall under .wall--armed (tiles held gathered and dark, so
+   the landing belongs to the hero statement alone), then swaps it for
+   .wall--enter — starting the bloom — when the visitor scrolls into the
+   hero runway or hits the hero play button. The class comes off after
+   the entrance has played, so resize rebuilds never replay it.
+     - iPhone-unlock springboard: while armed the whole wall sits
+       gathered at 55% scale about its own center, dark, like a folder
+       of apps a moment before it springs open.
      - Each tile then bursts outward along its own radial vector back to
        its resting slot, staggered center-out — center tiles land first,
        edge tiles last — with a spring overshoot and a brightness pop, so
@@ -69,23 +72,54 @@
   }
 
   /* hero.css pins rows 1/3's transform-origin to the wall's outer edges
-     for hover growth, at (0,3,0) — enough to beat .wall--enter .tile no
-     matter the stylesheet order. Out-specify it so the bloom's scale
-     pivots every tile about its own center; row 2 already defaults there. */
+     for hover growth, at (0,3,0) — enough to beat the two-class rules
+     here no matter the stylesheet order. Out-specify it so the hold and
+     the bloom both scale every tile about its own center; row 2 already
+     defaults there. */
+  .wall--armed .wall-row:nth-child(1) .tile,
+  .wall--armed .wall-row:nth-child(3) .tile,
   .wall--enter .wall-row:nth-child(1) .tile,
   .wall--enter .wall-row:nth-child(3) .tile {
     transform-origin: 50% 50%;
   }
 
-  /* The hero type answers the wall: the statement rises through its
-     masks once the bloom has mostly landed, the roll-tape cue lands
-     last. Scoped overrides of the stagger steps above (mask-rise) and
-     atmosphere's [data-reveal-delay] table; the mono HUD labels in
-     .hero-topline keep their instant reveal + scramble at t=0. */
-  .hero-statement [data-reveal="mask-rise"].is-revealed .mask-line__inner { transition-delay: 650ms; }
-  .hero-statement [data-reveal="mask-rise"][data-reveal-delay="1"].is-revealed .mask-line__inner { transition-delay: 770ms; }
-  .hero-statement [data-reveal="mask-rise"][data-reveal-delay="2"].is-revealed .mask-line__inner { transition-delay: 890ms; }
-  .hero-overlay .hero-cue.is-revealed { transition-delay: 1500ms; }
+  /* Armed: built + measured, bloom not yet fired. wall.js holds this
+     class until the visitor scrolls into the hero runway (or hits the
+     hero play button); the hold matches mx-tile-bloom's from keyframe
+     exactly, so the swap to .wall--enter starts the spring without a
+     visible seam. Keep this in lockstep with the keyframe below. */
+  .wall--armed .wall-row {
+    /* The stage is COMPLETELY black before the bloom — even at
+       brightness(0) the gathered cluster's hairlines read as a smudged
+       texture behind the statement. visibility (not display) so the
+       geometry stays measurable and the videos keep lazy-loading and
+       playing underneath: the wall is alive the instant it blooms, and
+       the fire-frame is already black, so flipping visible has no seam. */
+    visibility: hidden;
+  }
+
+  .wall--armed .tile {
+    transform: translate3d(
+        calc(var(--cdx, 0px) * 0.45),
+        calc(var(--cdy, 0px) * 0.45),
+        0
+      )
+      scale(0.55);
+    filter: brightness(0);
+  }
+
+  /* The statement leads now — the bloom answers the scroll instead of
+     the other way round — so the type rises on a short opening stagger
+     and the roll-tape cue arrives last. Scoped overrides of the stagger
+     steps above (mask-rise) and atmosphere's [data-reveal-delay] table;
+     the mono HUD labels in .hero-topline keep their instant reveal +
+     scramble at t=0. The play button's 700ms pop-in delay lives in
+     hero.css as a per-property (opacity-only) transition delay, so a
+     blanket delay here can't defer its hover response. */
+  .hero-statement [data-reveal="mask-rise"].is-revealed .mask-line__inner { transition-delay: 150ms; }
+  .hero-statement [data-reveal="mask-rise"][data-reveal-delay="1"].is-revealed .mask-line__inner { transition-delay: 270ms; }
+  .hero-statement [data-reveal="mask-rise"][data-reveal-delay="2"].is-revealed .mask-line__inner { transition-delay: 390ms; }
+  .hero-overlay .hero-cue.is-revealed { transition-delay: 900ms; }
 }
 
 @keyframes mx-tile-bloom {
@@ -97,6 +131,13 @@
       )
       scale(0.55);
     filter: brightness(0);
+    /* A tile waiting out its stagger delay holds this frame (backwards
+       fill) — and brightness(0) alone is BLACK, not invisible, so the
+       waiting tiles read as a dark grid floating behind the ones that
+       already popped. visibility uses discrete interpolation: held
+       hidden for the whole delay, it flips visible the instant the
+       spring starts. Tile opacity stays off-limits (scroll-linked). */
+    visibility: hidden;
   }
   /* the spring bezier overshoots every channel on the way in: the tile
      sails a touch past its slot and brightness pops past 1, then both
@@ -104,6 +145,7 @@
   to {
     transform: none;
     filter: brightness(1);
+    visibility: visible;
   }
 }
 

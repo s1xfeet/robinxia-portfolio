@@ -52,6 +52,17 @@
   overflow-y: visible;
 }
 
+/* A grown tile (hover or proximity field) crosses into the neighbouring
+   row, but each track is its own stacking context (the marquee transform),
+   so a tile's z-index can never win across rows: the later row in the DOM
+   always painted over row 1's swell, cropping the selected take. Lift the
+   whole row that owns the pointer above its siblings instead — z-index
+   applies to flex items directly, no positioning needed. */
+.wall-row:hover,
+.wall-row:focus-within {
+  z-index: 2;
+}
+
 .wall-track {
   display: flex;
   height: 100%;
@@ -427,11 +438,93 @@
 }
 
 .hero-line--half {
+  /* Shrink-wraps to its text so the play button can ride the same line,
+     right after the period. An inline-block after block siblings still
+     starts on its own line, so the stack is unchanged. */
+  display: inline-block;
   margin-left: clamp(1.25rem, 7vw, 6rem);
 }
 
 .hero-period {
   color: var(--color-rec);
+}
+
+/* YouTube-style play button riding the end of "watched." — the statement
+   reads as a video title card with its play control. Click it and the
+   page rides down to the wall front while the bloom fires (wall.js).
+   The overlay is pointer-events: none, so the button re-enables its own
+   hits. Bottom sits on the text baseline, like the period beside it. */
+.hero-play {
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 0.45em;
+  pointer-events: auto;
+  width: clamp(4rem, 3rem + 3vw, 5.5rem);
+  color: var(--color-rec);
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55));
+  /* This list REPLACES atmosphere's [data-reveal] transition in the
+     cascade, so opacity must be re-listed here or the reveal snaps.
+     Only opacity carries the 700ms entrance delay (pop in after
+     "watched." lands) — transform/filter stay delay-free so hover
+     answers instantly in BOTH directions, no held exit. */
+  transition:
+    transform 320ms var(--ease-out-expo),
+    filter 320ms ease,
+    opacity 600ms ease 700ms;
+}
+
+/* The idle pulse lives on the INNER svg and the hover response on the
+   outer link, so the two never fight over transform/filter: hover eases
+   the whole button up while the glow keeps breathing underneath — no
+   snap on enter, no snap when the pulse used to restart on exit. */
+.hero-play svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 6px oklch(58% 0.22 27 / 0.18));
+}
+
+/* Idle "press me": the button breathes forward and back while its red
+   glow swells — the only looping motion on the black landing stage, so
+   the eye lands on the one clickable thing. Gated on .is-revealed so it
+   never runs before the button has popped in; the RM block below kills
+   it outright. */
+.hero-play.is-revealed svg {
+  animation: hero-play-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes hero-play-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px oklch(58% 0.22 27 / 0.18));
+  }
+  50% {
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 20px oklch(58% 0.22 27 / 0.55));
+  }
+}
+
+/* Locked on: the outer link eases up and brightens over the breathing
+   glow. Transition-only (the pulse keeps running on the svg), so both
+   the enter and the exit ride the same smooth curve. */
+.hero-play:hover,
+.hero-play:focus-visible {
+  transform: scale(1.1);
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55)) brightness(1.18);
+}
+
+.hero-play:focus-visible {
+  outline: 2px solid var(--color-tc);
+  outline-offset: 6px;
+}
+
+/* Once the wall goes live (p ≥ 0.6) the overlay has faded out but still
+   sits over the wall's hit area — without this, the invisible button
+   would steal clicks from the tiles behind it. */
+.wall.is-live + .hero-overlay .hero-play {
+  pointer-events: none;
 }
 
 .hero-cue {
@@ -540,6 +633,22 @@
   .tile[href]:focus-visible::after,
   .tile[href]:hover .tile__video,
   .tile[href]:focus-visible .tile__video {
+    transform: none;
+  }
+
+  /* The play button holds still too; it stays fully functional. The
+     pulse kill needs the .is-revealed compound to out-tie the pulse rule. */
+  .hero-play {
+    transition: none;
+  }
+
+  .hero-play svg,
+  .hero-play.is-revealed svg {
+    animation: none;
+  }
+
+  .hero-play:hover,
+  .hero-play:focus-visible {
     transform: none;
   }
 }

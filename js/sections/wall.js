@@ -7,6 +7,7 @@
 // mobile / reduced-motion / save-data tiles never download or decode video.
 
 import { WALL_ROWS } from "./wall-data.js";
+import { smoothScrollTo } from "../smooth-scroll.js";
 
 function buildTile(item) {
   const tile = document.createElement("a");
@@ -407,15 +408,16 @@ export function initWall() {
       });
     });
 
-    // Entrance geometry (motion.css .wall--enter): each tile gets its px
-    // vector to the wall's center (--cdx/--cdy) and a normalized radial
-    // distance (--edn) that staggers the bloom center-out. Measured only
-    // on the first build while the entrance class is still on — resize
-    // rebuilds skip the forced layout — and skipped under reduced motion,
-    // where the CSS never reads the vars. Runs synchronously in the same
-    // task as the DOM build, so the vars are set before first paint.
+    // Entrance geometry (motion.css .wall--armed / .wall--enter): each
+    // tile gets its px vector to the wall's center (--cdx/--cdy) and a
+    // normalized radial distance (--edn) that staggers the bloom
+    // center-out. Measured while the wall is still ARMED — the first
+    // build, plus any armed-state resize rebuild, which needs fresh
+    // geometry — and skipped under reduced motion, where the CSS never
+    // reads the vars. Runs synchronously in the same task as the DOM
+    // build, so the vars are set before first paint.
     if (
-      wall.classList.contains("wall--enter") &&
+      wall.classList.contains("wall--armed") &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
       const wallRect = wall.getBoundingClientRect();
@@ -446,14 +448,44 @@ export function initWall() {
     marquee = createMarquee(tracks, wall);
   };
 
-  // One-shot landing entrance (motion.css): the wall blooms open from a
-  // gathered, dark center point to its resting grid, springboard-style.
-  // The class is removed once the choreography has fully played so
-  // resize rebuilds never replay it; reduced motion is gated in the CSS.
-  wall.classList.add("wall--enter");
-  setTimeout(() => wall.classList.remove("wall--enter"), 2200);
+  // One-shot landing entrance, now scroll-triggered: the wall is built
+  // ARMED (tiles held at the bloom's from-state, motion.css .wall--armed)
+  // and the bloom fires on the first real scroll into the runway or on
+  // the hero play button. Arriving mid-runway (refresh, deep link,
+  // restored scroll) skips the choreography entirely; reduced motion is
+  // gated here and in the CSS.
+  const runway0 = hero.offsetHeight - window.innerHeight;
+  const p0 = runway0 > 0 ? window.scrollY / runway0 : 0;
+  let armed =
+    p0 < 0.05 &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (armed) wall.classList.add("wall--armed");
+
+  const fireEntrance = () => {
+    if (!armed) return;
+    armed = false;
+    // One style recalc: the animation's from keyframe equals the armed
+    // hold, so the swap reads as the spring starting, not a state jump.
+    wall.classList.remove("wall--armed");
+    wall.classList.add("wall--enter");
+    setTimeout(() => wall.classList.remove("wall--enter"), 2200);
+  };
 
   buildWall();
+
+  // Hero play button: fires the bloom and rides the smooth scroll down
+  // to the wall front (p = 1). stopPropagation keeps smooth-scroll.js's
+  // document-level anchor handler from also scrolling to #work; the
+  // capture-phase analytics listener still sees the click.
+  const play = document.querySelector(".hero-play");
+  if (play) {
+    play.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fireEntrance();
+      smoothScrollTo(hero.offsetHeight - window.innerHeight);
+    });
+  }
 
   // A width change — or the wall finally getting a real size after loading in a
   // background/hidden tab — can turn a full row into a gapped one. Rebuild then.
@@ -466,9 +498,11 @@ export function initWall() {
       rebuildTimer = setTimeout(() => {
         if (window.innerWidth === lastBuildWidth) return;
         lastBuildWidth = window.innerWidth;
-        // A real rebuild inside the entrance window would replay the bloom
-        // on the fresh tiles — from a blackout, with fallback vars, all at
-        // once. A resize mid-entrance forfeits the choreography instead.
+        // A real rebuild while the bloom is PLAYING would replay it on
+        // the fresh tiles — from a blackout, with fallback vars, all at
+        // once — so a mid-entrance resize forfeits the choreography.
+        // An ARMED rebuild is fine: the class stays on and buildWall
+        // simply re-measures the new geometry.
         wall.classList.remove("wall--enter");
         buildWall();
       }, 250);
@@ -484,6 +518,8 @@ export function initWall() {
     const runway = hero.offsetHeight - window.innerHeight;
     const p = runway > 0 ? Math.min(1, Math.max(0, window.scrollY / runway)) : 0;
     hero.style.setProperty("--wall-p", p.toFixed(4));
+    // First real scroll into the runway springs the armed wall open.
+    if (p >= 0.12) fireEntrance();
     if (!live && p >= 0.6) {
       live = true;
       wall.removeAttribute("inert");

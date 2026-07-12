@@ -10,6 +10,11 @@ import Lenis from "./vendor/lenis.mjs";
 
 const HEADER_OFFSET = -88; // matches html { scroll-padding-top: 5.5rem } = 88px
 
+// Module-scoped so smoothScrollTo (below) can ride the live instance from
+// anywhere; null whenever Lenis is not driving the window (reduced motion,
+// save-data, or destroyed after a mid-session reduced-motion flip).
+let activeLenis = null;
+
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -76,18 +81,34 @@ function createLenis() {
 export function initSmoothScroll() {
   if (prefersReducedMotion() || saveDataEnabled()) return;
 
-  let lenis = createLenis();
-  const lockObserver = watchScrollLock(lenis);
+  activeLenis = createLenis();
+  const lockObserver = watchScrollLock(activeLenis);
 
-  const onAnchorClick = (event) => handleAnchorClick(event, lenis);
+  const onAnchorClick = (event) => handleAnchorClick(event, activeLenis);
   document.addEventListener("click", onAnchorClick);
 
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   reducedMotionQuery.addEventListener("change", (event) => {
-    if (!event.matches || !lenis) return;
+    if (!event.matches || !activeLenis) return;
     lockObserver.disconnect();
-    lenis.destroy();
-    lenis = null;
+    activeLenis.destroy();
+    activeLenis = null;
     document.removeEventListener("click", onAnchorClick);
+  });
+}
+
+// Programmatic smooth scroll to an absolute Y. Rides Lenis when it is
+// driving the window; falls back to native scrolling (instant under
+// reduced motion) when it is not.
+export function smoothScrollTo(top) {
+  if (activeLenis) {
+    // force: the caller may fire while Lenis is stopped (scroll-locked),
+    // and a stopped Lenis silently drops scrollTo otherwise.
+    activeLenis.scrollTo(top, { force: true });
+    return;
+  }
+  window.scrollTo({
+    top,
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
   });
 }

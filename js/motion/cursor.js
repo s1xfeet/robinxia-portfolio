@@ -27,6 +27,7 @@ export function initCursor() {
   const labelFor = (target) => {
     if (!(target instanceof Element)) return null;
     if (target.closest("[data-lightbox]")) return "▶ Play";
+    if (target.closest(".hero-play")) return "▶ Play";
     if (target.closest(".wall.is-live .wall-row")) return "⟷ Scrub";
     return null;
   };
