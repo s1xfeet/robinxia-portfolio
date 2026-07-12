@@ -45,8 +45,9 @@
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="preload" href="assets/fonts/BebasNeue-Regular.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
-  <noscript><style>[data-reveal] { opacity: 1 !important; transform: none !important; clip-path: none !important; }</style></noscript>
+  <link rel="preload" href="assets/fonts/Archivo-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/JetBrainsMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <noscript><style>[data-reveal] { opacity: 1 !important; transform: none !important; clip-path: none !important; } .mask-line__inner { transform: none !important; }</style></noscript>
   <link rel="stylesheet" href="styles/tokens.css">
   <link rel="stylesheet" href="styles/fonts.css">
   <link rel="stylesheet" href="styles/base.css">
@@ -58,6 +59,7 @@
   <link rel="stylesheet" href="styles/sections/about.css">
   <link rel="stylesheet" href="styles/sections/testimonial.css">
   <link rel="stylesheet" href="styles/sections/contact.css">
+  <link rel="stylesheet" href="styles/motion.css">
 </head>
 <body>
   <div id="tc-bar" aria-hidden="true"></div>
@@ -105,9 +107,9 @@
               <p class="hero-scene mono dim" data-reveal data-reveal-delay="1">Scene 00 · Cold Open</p>
             </div>
             <h1 id="hero-title" class="hero-statement">
-              <span class="hero-line" data-reveal>Made</span>
-              <span class="hero-line hero-line--indent" data-reveal data-reveal-delay="1">to be</span>
-              <span class="hero-line hero-line--half" data-reveal data-reveal-delay="2">watched<span class="hero-period">.</span></span>
+              <span class="hero-line" data-reveal="mask-rise"><span class="mask-line__inner">Made</span></span>
+              <span class="hero-line hero-line--indent" data-reveal="mask-rise" data-reveal-delay="1"><span class="mask-line__inner">to be</span></span>
+              <span class="hero-line hero-line--half" data-reveal="mask-rise" data-reveal-delay="2"><span class="mask-line__inner">watched<span class="hero-period">.</span></span></span>
             </h1>
           </div>
           <p class="hero-cue mono" data-reveal data-reveal-delay="4" aria-hidden="true"><span class="hero-cue-arrow">↓</span> Roll tape</p>

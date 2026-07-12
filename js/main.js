@@ -1,3 +1,4 @@
+import { initTypeMasks, initScramble } from "./motion/type.js";
 import { initReveal } from "./reveal.js";
 import { initTimecode } from "./timecode.js";
 import { initNav } from "./nav.js";
@@ -5,7 +6,9 @@ import { initMobileNav } from "./mobile-nav.js";
 import { initSectionFocus } from "./section-focus.js";
 import { initSmoothScroll } from "./smooth-scroll.js";
 
+initTypeMasks(); // before initReveal: slate titles become masked rises
 initReveal();
+initScramble();
 initTimecode();
 initNav();
 initMobileNav();
@@ -35,6 +38,12 @@ import("./sections/builds.js")
   .catch(() => {});
 import("./contact.js")
   .then((mod) => mod.initContact?.())
+  .catch(() => {});
+import("./motion/cursor.js")
+  .then((mod) => mod.initCursor?.())
+  .catch(() => {});
+import("./motion/extras.js")
+  .then((mod) => mod.initExtras?.())
   .catch(() => {});
 import("./analytics.js")
   .then((mod) => mod.initAnalytics?.())

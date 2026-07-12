@@ -12,6 +12,10 @@ content/
 README-DESIGN.md
 .claude/
 
+# Design-session drop zone — demo copies from claude.ai sessions land here
+# for porting into the repo; reference only, never committed or deployed.
+site/
+
 # OS cruft
 .DS_Store
 

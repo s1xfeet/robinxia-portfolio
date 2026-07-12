@@ -11,7 +11,7 @@
 
   /* Ink */
   --color-text: oklch(93% 0.006 85);
-  --color-text-dim: oklch(66% 0.008 85);
+  --color-text-dim: oklch(74% 0.01 85); /* raised from 66% for legibility */
   --color-hairline: oklch(27% 0.006 270);
 
   /* Semantic accents — used sparingly, like lights in a dark room */
@@ -20,8 +20,8 @@
 
   /* Type */
   --font-display: "Bebas Neue", "Arial Narrow", "Impact", sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Menlo", monospace;
+  --font-body: "Archivo", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Menlo", monospace;
 
   --text-hero: clamp(3.5rem, 2rem + 9vw, 10rem);
   --text-h2: clamp(2.5rem, 1.6rem + 4.5vw, 5.5rem);

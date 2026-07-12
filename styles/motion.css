@@ -1,0 +1,164 @@
+/* ============================================================
+   MOTION UPGRADE — the award layer
+   New file. Link AFTER the section stylesheets so overrides win.
+   Everything here is gated on prefers-reduced-motion and
+   degrades to the previous site behaviour without JS.
+
+   Contents:
+     1. Masked type rises (hero lines + slate titles)
+     2. Cursor language (viewfinder dot + SCRUB / PLAY labels)
+     3. Animated grain
+     4. Scroll-scrubbed parallax (scene posters, frame media)
+     5. Selection + reduced-motion gates
+   ============================================================ */
+
+/* ---- 2. masked type rises ---------------------------------------- */
+
+/* The element is a clipping window; the inner line rises into it.
+   Opacity stays 1 (overrides atmosphere's base [data-reveal] fade). */
+[data-reveal="mask-rise"] {
+  opacity: 1;
+  transform: none;
+  overflow: clip;
+  overflow-clip-margin: 0.08em;
+}
+
+[data-reveal="mask-rise"] .mask-line__inner {
+  display: block;
+  transform: translateY(118%);
+}
+
+[data-reveal="mask-rise"].is-revealed .mask-line__inner {
+  transform: translateY(0);
+  transition: transform var(--duration-slate) var(--ease-cine);
+}
+
+/* manual stagger steps, mirrored onto the inner line */
+[data-reveal="mask-rise"][data-reveal-delay="1"].is-revealed .mask-line__inner { transition-delay: 90ms; }
+[data-reveal="mask-rise"][data-reveal-delay="2"].is-revealed .mask-line__inner { transition-delay: 180ms; }
+[data-reveal="mask-rise"][data-reveal-delay="3"].is-revealed .mask-line__inner { transition-delay: 270ms; }
+
+/* ---- 3. cursor language ------------------------------------------- */
+
+/* Augments the native cursor (never replaces it): a lerped viewfinder
+   dot, plus a mono chip naming the interaction. JS positions both via
+   transform, so CSS transitions here must never touch transform. */
+.mx-cursor {
+  position: fixed;
+  left: -4px;
+  top: -4px;
+  z-index: 10020;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--color-tc);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    width 180ms var(--ease-out-expo),
+    height 180ms var(--ease-out-expo),
+    border-color 180ms ease;
+}
+
+.mx-cursor.is-on {
+  opacity: 1;
+}
+
+.mx-cursor.is-hot {
+  width: 26px;
+  height: 26px;
+  border-color: var(--color-rec);
+}
+
+.mx-cursor-label {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10020;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-tc);
+  background: oklch(13% 0.006 270 / 0.88);
+  border: 1px solid var(--color-hairline);
+  padding: 0.4em 0.75em;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.mx-cursor-label.is-on {
+  opacity: 1;
+}
+
+/* ---- 5. animated grain -------------------------------------------- */
+
+/* Re-projects the existing grain layer (body::after, atmosphere.css)
+   with a steps() jitter so it reads as film, not texture. Oversized
+   inset gives the transform room; compositor-only. */
+@media (prefers-reduced-motion: no-preference) {
+  body::after {
+    inset: -120px;
+    animation: mx-grain 640ms steps(1) infinite;
+  }
+}
+
+@keyframes mx-grain {
+  0%, 100% { transform: translate(0, 0); }
+  12.5% { transform: translate(-42px, 28px); }
+  25% { transform: translate(60px, -36px); }
+  37.5% { transform: translate(-24px, -60px); }
+  50% { transform: translate(48px, 52px); }
+  62.5% { transform: translate(-64px, 8px); }
+  75% { transform: translate(18px, -44px); }
+  87.5% { transform: translate(-36px, 56px); }
+}
+
+/* ---- 6. scroll-scrubbed parallax ----------------------------------- */
+
+/* Continuous, scrubbed motion (works backwards too). Same progressive-
+   enhancement gate as atmosphere's slate-drift. Media is pre-scaled so
+   the travel never exposes edges; transform-only. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scene__bg {
+      overflow: clip;
+    }
+
+    .scene__poster,
+    .frame--169 > img,
+    .frame--169 > video {
+      scale: 1.12;
+      animation: mx-parallax linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes mx-parallax {
+  from { transform: translateY(-3.5%); }
+  to { transform: translateY(3.5%); }
+}
+
+/* ---- 7. selection + reduced motion --------------------------------- */
+
+::selection {
+  background: var(--color-rec);
+  color: oklch(97% 0.005 85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mx-cursor,
+  .mx-cursor-label {
+    display: none;
+  }
+
+  [data-reveal="mask-rise"] .mask-line__inner {
+    transform: none;
+    transition: none;
+  }
+}

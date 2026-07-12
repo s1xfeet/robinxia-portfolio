@@ -29,5 +29,8 @@ worker.js
 # Source font files — the site loads the subsetted .woff2, not these
 assets/fonts/*.ttf
 
+# Design-session drop zone — local reference copies, never deployed
+site/
+
 # OS cruft
 .DS_Store
