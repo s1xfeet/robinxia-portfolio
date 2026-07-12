@@ -199,6 +199,16 @@
   color: var(--color-tc);
 }
 
+/* View count: the quietest line of the lower third. Dimmer than the amber
+   label so the hierarchy reads client > category > number; rendered only
+   for 100K+ videos (wall.js), so it appears where it brags. */
+.tile__views {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--color-text-dim);
+}
+
 /* interactive states - only reachable once .wall is live.
    Hover / focus reads as pulling the "selected take" off a monitor wall:
    the tile lifts toward the viewer, the rec-red frame ignites and casts

@@ -58,7 +58,27 @@ function buildTile(item) {
   label.textContent = item.label;
 
   tile.append(client, label);
+
+  // View count, third line of the lower third — only where it brags.
+  const views = formatViews(item.views);
+  if (views) {
+    const line = document.createElement("span");
+    line.className = "tile__views";
+    line.textContent = `▸ ${views}`;
+    tile.appendChild(line);
+  }
+
   return tile;
+}
+
+// 11570680 -> "11.6M", 982093 -> "982K"; below the 100K bragging floor -> null.
+function formatViews(count) {
+  if (!count || count < 100000) return null;
+  if (count >= 1e6) {
+    const m = (count / 1e6).toFixed(1);
+    return `${m.endsWith(".0") ? m.slice(0, -2) : m}M`;
+  }
+  return `${Math.round(count / 1e3)}K`;
 }
 
 // Owns every .tile__video: decides when playback is allowed and lazily loads /
