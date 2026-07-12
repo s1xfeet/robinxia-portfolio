@@ -5,13 +5,6 @@
    background and click to open it in the lightbox. Below the two scenes,
    the cutting log lists five smaller engagements in normal flow. */
 
-/* Work is the only section that opens on a full-bleed video wall rather
-   than body copy, so its slate reads better centered over that wall than
-   left-hugging the content column like every other section's slate. */
-.section--work .slate {
-  text-align: center;
-}
-
 /* client name -> YouTube channel; a record-red underline sweeps in on
    hover/focus. Applies in scene headings and cutting-log rows. */
 .client-link {
