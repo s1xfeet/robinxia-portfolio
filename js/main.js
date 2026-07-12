@@ -36,6 +36,9 @@ import("./sections/writing-bg.js")
 import("./sections/builds.js")
   .then((mod) => mod.initBuilds?.())
   .catch(() => {});
+import("./sections/about-bg.js")
+  .then((mod) => mod.initAboutBg?.())
+  .catch(() => {});
 import("./contact.js")
   .then((mod) => mod.initContact?.())
   .catch(() => {});
