@@ -1,10 +1,16 @@
 // Proximity magnification field for the work wall — Apple Watch app-library
 // feel. Every tile's scale is a smooth function of its distance to the
-// cursor, and — like the Watch library and the macOS Dock — growth
-// DISPLACES neighbours instead of overlapping them: a growing tile pushes
-// its row siblings outward by half its added width on each side, and each
-// row pushes the other rows apart by half its tallest tile's added height.
-// The bubble opens space for itself, so nothing ever layers.
+// cursor, and — like the macOS Dock — growth DISPLACES row siblings
+// instead of overlapping them: a growing tile pushes everything on each
+// side of it by half its added width, which exactly preserves the row's
+// gaps.
+//
+// Rows deliberately do NOT move. An earlier version also spaced the rows
+// apart vertically, but whole rows bobbing as the cursor crossed them made
+// the wall churn (motion sickness) and shoved the top row under the fixed
+// header. Growth is kept small enough that the row gaps absorb most of
+// the vertical swell; the little that remains overlaps by a few px and
+// resolves toward the cursor via z-index.
 //
 // Scales are lerped per frame so the bubble glides rather than snaps, and
 // geometry is re-read every frame so the field stays correct while the
@@ -13,8 +19,8 @@
 // goes live, so no events (and no work) happen under the hero overlay.
 
 const RADIUS = 400; // px falloff radius of the bubble
-const MAX_BOOST = 0.26; // nearest tile grows to 1.26
-const EASE = 0.18; // per-frame lerp toward target
+const MAX_BOOST = 0.14; // nearest tile grows to 1.14 — calm, not churning
+const EASE = 0.12; // per-frame lerp toward target; lower = floatier
 
 export function initTileField() {
   const wall = document.getElementById("wall");
@@ -28,25 +34,21 @@ export function initTileField() {
   wall.classList.add("has-field");
 
   // tile -> { k: field strength 0..1, tx: applied x displacement }
-  // row  -> { ty: applied y displacement }
   const tileState = new Map();
-  const rowState = new Map();
 
   let rows = [];
   const collect = () => {
-    rows = Array.from(wall.querySelectorAll(".wall-row")).map((rowEl) => ({
-      rowEl,
-      tiles: Array.from(rowEl.querySelectorAll(".tile")),
-    }));
-    const aliveTiles = new Set();
+    rows = Array.from(wall.querySelectorAll(".wall-row")).map((rowEl) =>
+      Array.from(rowEl.querySelectorAll(".tile"))
+    );
+    const alive = new Set();
     for (const row of rows) {
-      if (!rowState.has(row.rowEl)) rowState.set(row.rowEl, { ty: 0 });
-      for (const t of row.tiles) {
-        aliveTiles.add(t);
+      for (const t of row) {
+        alive.add(t);
         if (!tileState.has(t)) tileState.set(t, { k: 0, tx: 0 });
       }
     }
-    for (const t of tileState.keys()) if (!aliveTiles.has(t)) tileState.delete(t);
+    for (const t of tileState.keys()) if (!alive.has(t)) tileState.delete(t);
   };
   collect();
 
@@ -64,32 +66,25 @@ export function initTileField() {
   const frame = () => {
     let settled = true;
 
-    // Phase 1 — read. Rects include our own previous transforms, so back
-    // them out to get the tile's base geometry; computing the field from
-    // base positions keeps the displacement math from feeding back into
-    // itself and oscillating.
     for (const row of rows) {
-      const rTy = rowState.get(row.rowEl).ty;
-      row.geo = row.tiles.map((t) => {
+      // Phase 1 — read. Rects include our own previous transforms, so back
+      // them out to get base geometry; computing the field from base
+      // positions keeps the displacement from feeding back into itself.
+      const geo = row.map((t) => {
         const s = tileState.get(t);
         const r = t.getBoundingClientRect();
         const scale = 1 + MAX_BOOST * s.k;
-        const w = r.width / scale;
-        const h = r.height / scale;
         return {
           t,
           s,
-          w,
-          h,
+          w: r.width / scale,
           cx: r.left + r.width / 2 - s.tx,
-          cy: r.top + r.height / 2 - rTy,
+          cy: r.top + r.height / 2,
         };
       });
-    }
 
-    // Phase 2 — field strengths.
-    for (const row of rows) {
-      for (const g of row.geo) {
+      // Phase 2 — field strengths.
+      for (const g of geo) {
         const d = Math.hypot(px - g.cx, py - g.cy);
         const target =
           active && d < RADIUS
@@ -99,36 +94,12 @@ export function initTileField() {
         if (g.s.k < 0.001 && target === 0) g.s.k = 0;
         else settled = false;
       }
-    }
 
-    // Phase 3 — displacement + write. A tile growing by `grow` px pushes
-    // everything on each side of it by grow/2, which exactly preserves the
-    // row's gaps; the same rule spaces the rows vertically.
-    const rowMeta = rows.map((row) => {
-      let maxGrowY = 0;
-      let cy = 0;
-      for (const g of row.geo) {
-        maxGrowY = Math.max(maxGrowY, g.h * MAX_BOOST * g.s.k);
-        cy += g.cy;
-      }
-      return { row, maxGrowY, cy: cy / (row.geo.length || 1) };
-    });
-
-    for (const { row } of rowMeta) {
-      const rState = rowState.get(row.rowEl);
-      let ty = 0;
-      for (const other of rowMeta) {
-        if (other.row === row) continue;
-        const meta = rowMeta.find((m) => m.row === row);
-        ty += Math.sign(meta.cy - other.cy) * (other.maxGrowY / 2);
-      }
-      rState.ty = ty;
-      row.rowEl.style.transform =
-        Math.abs(ty) < 0.05 ? "" : `translateY(${ty.toFixed(2)}px)`;
-
-      for (const g of row.geo) {
+      // Phase 3 — displacement + write. A tile growing by `grow` px pushes
+      // everything on each side of it by grow/2, preserving the row's gaps.
+      for (const g of geo) {
         let tx = 0;
-        for (const o of row.geo) {
+        for (const o of geo) {
           if (o === g || o.s.k === 0) continue;
           tx += Math.sign(g.cx - o.cx) * ((o.w * MAX_BOOST * o.s.k) / 2);
         }
@@ -139,8 +110,8 @@ export function initTileField() {
         } else {
           const scale = (1 + MAX_BOOST * g.s.k).toFixed(4);
           g.t.style.transform = `translateX(${tx.toFixed(2)}px) scale(${scale})`;
-          // Transient sub-pixel overlaps while the field settles resolve
-          // toward the cursor: strongest tile rides highest.
+          // The slight vertical swell can brush the neighbouring row;
+          // strongest tile rides highest so overlaps resolve to the cursor.
           g.t.style.zIndex = g.s.k > 0.4 ? "3" : g.s.k > 0 ? "1" : "";
         }
       }
