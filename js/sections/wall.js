@@ -385,6 +385,13 @@ export function initWall() {
         if (clonedVideo) clonedVideo.muted = true; // muted property is lost on clone
         track.appendChild(copy);
       });
+
+      // Entrance cascade index (motion.css .wall--enter): left-to-right
+      // position in the track, capped so far-right repeats and clones
+      // don't stretch the stagger window past the viewport.
+      Array.from(track.children).forEach((tile, i) => {
+        tile.style.setProperty("--ti", String(Math.min(i, 14)));
+      });
     });
 
     // Video playback controller manages every .tile__video (originals + copies).
@@ -393,6 +400,12 @@ export function initWall() {
     // Marquee drives the transform (replaces the CSS animation) + drag-to-scroll.
     marquee = createMarquee(tracks, wall);
   };
+
+  // One-shot landing entrance (motion.css): monitors power on, rows sweep
+  // in. The class is removed once the choreography has fully played so
+  // resize rebuilds never replay it; reduced motion is gated in the CSS.
+  wall.classList.add("wall--enter");
+  setTimeout(() => wall.classList.remove("wall--enter"), 2200);
 
   buildWall();
 
