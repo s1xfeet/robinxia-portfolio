@@ -45,8 +45,14 @@
    transform, so CSS transitions here must never touch transform. */
 .mx-cursor {
   position: fixed;
-  left: -4px;
-  top: -4px;
+  left: 0;
+  top: 0;
+  /* Self-center on the JS-driven point: the % offset tracks the box as
+     width/height animate (is-hot), unlike a fixed -4px left/top which
+     left the grown circle hanging off-center past the pointer.
+     `translate` composes before the JS `transform`, so the dot's center
+     always sits exactly on (x, y). */
+  translate: -50% -50%;
   z-index: 10020;
   width: 8px;
   height: 8px;
