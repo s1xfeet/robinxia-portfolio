@@ -32,8 +32,56 @@
   transform: scaleX(1);
 }
 
+/* "View channel" tooltip, only on names wired with data-tooltip */
+.client-link[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.6em);
+  padding: 0.4em 0.75em;
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-hairline);
+  border-radius: 3px;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+  z-index: 20;
+}
+
+.client-link[data-tooltip]:hover::before,
+.client-link[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* subscriber count riding beside a client name */
+.client-subs {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.65em;
+  padding: 0.22em 0.6em;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-tc);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .client-link::after {
+  .client-link::after,
+  .client-link[data-tooltip]::before {
     transition: none;
   }
 }
@@ -185,7 +233,9 @@
       to top,
       color-mix(in oklch, var(--color-surface) 94%, transparent) 0%,
       color-mix(in oklch, var(--color-surface) 40%, transparent) 46%,
-      transparent 82%
+      transparent 72%,
+      transparent 88%,
+      color-mix(in oklch, var(--color-surface) 65%, transparent) 100%
     ),
     linear-gradient(
       to right,
