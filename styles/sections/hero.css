@@ -130,7 +130,8 @@
     transform var(--duration-fast) var(--ease-out-expo),
     border-color var(--duration-fast) ease,
     opacity var(--duration-fast) ease,
-    filter var(--duration-fast) ease;
+    filter var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 .tile--tall {
@@ -200,12 +201,16 @@
 
 /* interactive states - only reachable once .wall is live.
    Hover / focus reads as pulling the "selected take" off a monitor wall:
-   the tile steps forward and goes full-bright, the rec-red frame ignites. */
+   the tile lifts toward the viewer, the rec-red frame ignites and casts
+   a glow, and the wall behind it falls away. */
 .tile[href]:hover,
 .tile[href]:focus-visible {
   border-color: var(--color-rec);
   opacity: 1;
-  transform: scale(1.03);
+  transform: translateY(-6px) scale(1.05);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.6),
+    0 0 22px oklch(58% 0.22 27 / 0.4);
 }
 
 .tile[href]:focus-visible {
@@ -214,26 +219,31 @@
 }
 
 /* Spotlight: in a hovered / focused row, every tile that is NOT the selected
-   take recedes so the live one owns the eye. Opacity + a light desaturate,
-   both compositor-friendly; the hovered tile is excluded so it stays lit. */
+   take recedes so the live one owns the eye. Opacity + desaturate + a dim,
+   all compositor-friendly; the hovered tile is excluded so it stays lit. */
 .wall-row:hover .tile:not(:hover),
 .wall-row:focus-within .tile:not(:focus-visible):not(:hover) {
-  opacity: 0.42;
-  filter: saturate(0.85);
+  opacity: 0.3;
+  filter: saturate(0.6) brightness(0.8);
 }
 
-/* Viewfinder locks on: the top tick flips to rec-red and eases outward while
-   the mirrored bottom-right corner snaps in, bracketing the frame. */
+/* Viewfinder locks on: the top tick flips to rec-red, grows, and eases
+   outward while the mirrored bottom-right corner snaps in at the same
+   size, bracketing the frame like a focus reticle engaging. */
 .tile[href]:hover::before,
 .tile[href]:focus-visible::before {
   border-color: var(--color-rec);
   opacity: 1;
+  width: 0.75rem;
+  height: 0.75rem;
   transform: translate(-0.1rem, -0.1rem);
 }
 
 .tile[href]:hover::after,
 .tile[href]:focus-visible::after {
   opacity: 1;
+  width: 0.75rem;
+  height: 0.75rem;
   transform: translate(0, 0);
 }
 
@@ -254,9 +264,12 @@
   object-fit: cover;
   display: block;
   z-index: 0; /* behind the label + tick, above the black fallback */
-  /* compositor-only flourish on hover — poster/clip scales, no layout props */
-  transition: transform var(--duration-normal, 300ms)
-    var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  /* compositor-only flourish on hover — poster/clip scales + lights up,
+     no layout props */
+  transition:
+    transform var(--duration-normal, 300ms)
+      var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    filter var(--duration-normal, 300ms) ease;
 }
 
 /* Bottom-weighted wash so CLIENT / label stay legible over bright
@@ -295,10 +308,12 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
-/* Selected take comes alive - clip scales up. Transform only, no layout. */
+/* Selected take comes alive - the clip scales up and lights up a touch
+   past neutral, like a monitor kicked to full output. */
 .tile[href]:hover .tile__video,
 .tile[href]:focus-visible .tile__video {
-  transform: scale(1.06);
+  transform: scale(1.08);
+  filter: saturate(1.12) brightness(1.06);
 }
 
 /* ---- scrim ------------------------------------------------------ */
