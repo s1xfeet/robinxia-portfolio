@@ -405,14 +405,39 @@ export function initWall() {
         if (clonedVideo) clonedVideo.muted = true; // muted property is lost on clone
         track.appendChild(copy);
       });
-
-      // Entrance cascade index (motion.css .wall--enter): left-to-right
-      // position in the track, capped so far-right repeats and clones
-      // don't stretch the stagger window past the viewport.
-      Array.from(track.children).forEach((tile, i) => {
-        tile.style.setProperty("--ti", String(Math.min(i, 14)));
-      });
     });
+
+    // Entrance geometry (motion.css .wall--enter): each tile gets its px
+    // vector to the wall's center (--cdx/--cdy) and a normalized radial
+    // distance (--edn) that staggers the bloom center-out. Measured only
+    // on the first build while the entrance class is still on — resize
+    // rebuilds skip the forced layout — and skipped under reduced motion,
+    // where the CSS never reads the vars. Runs synchronously in the same
+    // task as the DOM build, so the vars are set before first paint.
+    if (
+      wall.classList.contains("wall--enter") &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      const wallRect = wall.getBoundingClientRect();
+      const cx = wallRect.left + wallRect.width / 2;
+      const cy = wallRect.top + wallRect.height / 2;
+      const maxDist = Math.hypot(wallRect.width, wallRect.height) / 2 || 1;
+      const tiles = Array.from(wall.querySelectorAll(".tile"));
+      // Read phase first, then write phase: interleaving rect reads with
+      // custom-property writes would re-dirty style between every read.
+      const rects = tiles.map((tile) => tile.getBoundingClientRect());
+      tiles.forEach((tile, i) => {
+        const rect = rects[i];
+        const dx = cx - (rect.left + rect.width / 2);
+        const dy = cy - (rect.top + rect.height / 2);
+        tile.style.setProperty("--cdx", `${dx.toFixed(1)}px`);
+        tile.style.setProperty("--cdy", `${dy.toFixed(1)}px`);
+        tile.style.setProperty(
+          "--edn",
+          Math.min(1, Math.hypot(dx, dy) / maxDist).toFixed(3)
+        );
+      });
+    }
 
     // Video playback controller manages every .tile__video (originals + copies).
     videoController = createVideoController(wall);
@@ -421,8 +446,9 @@ export function initWall() {
     marquee = createMarquee(tracks, wall);
   };
 
-  // One-shot landing entrance (motion.css): monitors power on, rows sweep
-  // in. The class is removed once the choreography has fully played so
+  // One-shot landing entrance (motion.css): the wall blooms open from a
+  // gathered, dark center point to its resting grid, springboard-style.
+  // The class is removed once the choreography has fully played so
   // resize rebuilds never replay it; reduced motion is gated in the CSS.
   wall.classList.add("wall--enter");
   setTimeout(() => wall.classList.remove("wall--enter"), 2200);
@@ -440,6 +466,10 @@ export function initWall() {
       rebuildTimer = setTimeout(() => {
         if (window.innerWidth === lastBuildWidth) return;
         lastBuildWidth = window.innerWidth;
+        // A real rebuild inside the entrance window would replay the bloom
+        // on the fresh tiles — from a blackout, with fallback vars, all at
+        // once. A resize mid-entrance forfeits the choreography instead.
+        wall.classList.remove("wall--enter");
         buildWall();
       }, 250);
     },
