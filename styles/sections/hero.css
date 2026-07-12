@@ -211,6 +211,16 @@
   box-shadow:
     0 14px 36px rgba(0, 0, 0, 0.6),
     0 0 22px oklch(58% 0.22 27 / 0.4);
+  /* the grown tile can overlap the neighbouring rows — keep it on top */
+  z-index: 2;
+}
+
+/* Shorts tiles are narrow, so the standard scale barely reads on them —
+   they get a stronger step-forward to match the wide tiles' presence.
+   Rows keep overflow-y visible, so the extra height shows cleanly. */
+.tile--tall[href]:hover,
+.tile--tall[href]:focus-visible {
+  transform: translateY(-6px) scale(1.14);
 }
 
 .tile[href]:focus-visible {
