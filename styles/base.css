@@ -67,8 +67,9 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: 0.015em;
+  font-weight: var(--weight-display);
+  font-stretch: var(--stretch-display);
+  letter-spacing: 0.01em;
   line-height: 0.95;
   text-wrap: balance;
 }
@@ -90,10 +91,14 @@ a {
 }
 
 .mono {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  /* labels carry timecodes, counts, and indices sitewide; tabular figures
+     keep those columns steady now that the face is proportional */
+  font-variant-numeric: tabular-nums;
 }
 
 .dim {
@@ -108,8 +113,9 @@ a {
   padding: 0.75em 1.25em;
   background: var(--color-surface-overlay);
   color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   text-decoration: none;
@@ -122,10 +128,12 @@ a {
 
 .btn {
   display: inline-block;
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.15em;
+  white-space: nowrap;
   color: var(--color-text);
   text-decoration: none;
   padding: 0.8em 1.6em;
@@ -183,7 +191,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.9rem;
   letter-spacing: 0.2em;
   text-decoration: none;
@@ -191,11 +200,13 @@ a {
 }
 
 .tc-readout {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   letter-spacing: 0.08em;
   color: var(--color-tc);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap; /* a timecode must never break across lines */
 }
 
 .site-nav {
@@ -210,8 +221,9 @@ a {
 }
 
 .site-nav a {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   text-decoration: none;
@@ -296,7 +308,8 @@ a {
   padding-block: clamp(0.9rem, 4vw, 1.4rem);
   font-family: var(--font-display);
   font-size: clamp(2rem, 9vw, 3.5rem);
-  font-weight: 400;
+  font-weight: var(--weight-display);
+  font-stretch: var(--stretch-display);
   text-transform: uppercase;
   letter-spacing: 0.015em;
   text-decoration: none;
@@ -372,8 +385,9 @@ a {
   align-items: center;
   padding: 2rem var(--space-gutter) 2.5rem;
   border-top: 1px solid var(--color-hairline);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text-dim);
@@ -443,7 +457,8 @@ a {
   background: color-mix(in oklch, var(--color-surface) 60%, transparent);
   border: 1px solid var(--color-hairline);
   color: var(--color-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;

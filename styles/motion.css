@@ -210,7 +210,8 @@
   top: 0;
   z-index: 10020;
   pointer-events: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.62rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;

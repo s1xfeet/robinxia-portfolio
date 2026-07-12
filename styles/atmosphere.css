@@ -68,8 +68,9 @@ body::after {
 .slate__kicker {
   max-width: none; /* it's a short mono label, not reading copy — base.css caps
                        all <p> at 65ch, which boxed it in and broke centering */
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-label);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
+  font-size: var(--text-label);
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--color-tc);
@@ -105,7 +106,8 @@ body::after {
   top: 0.75rem;
   left: 0.9rem;
   z-index: 3;
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;

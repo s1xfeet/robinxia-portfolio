@@ -41,8 +41,10 @@
   text-transform: uppercase;
 }
 
+/* excerpt is reading copy, not a label: text variation at body weight */
 .script-excerpt {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-weight: 400;
   font-size: 0.85rem;
   line-height: 1.8;
   color: var(--color-text-dim);

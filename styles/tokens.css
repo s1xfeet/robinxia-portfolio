@@ -18,17 +18,23 @@
   --color-rec: oklch(58% 0.22 27);   /* record red: live states, key marks */
   --color-tc: oklch(80% 0.13 80);    /* timecode amber: labels, meters, focus */
 
-  /* Type */
-  --font-display: "Bebas Neue", "Arial Narrow", "Impact", sans-serif;
-  --font-body: "Archivo", "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Menlo", monospace;
+  /* Type — one family, two variations of Archivo (variable: wght 100-900,
+     wdth 62-125). Display = condensed + heavy caps; text = normal width.
+     Labels are the text variation set small/uppercase/tracked/tabular. */
+  --font-display: "Archivo", "Arial Narrow", "Impact", sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, sans-serif;
+  --font-label: "Archivo", system-ui, -apple-system, sans-serif;
+
+  --stretch-display: 66%;
+  --weight-display: 700;
+  --weight-label: 500;
 
   --text-hero: clamp(3.5rem, 2rem + 9vw, 10rem);
   --text-h2: clamp(2.5rem, 1.6rem + 4.5vw, 5.5rem);
   --text-h3: clamp(1.4rem, 1.2rem + 1vw, 2rem);
   --text-base: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
   --text-small: 0.875rem;
-  --text-mono-label: 0.75rem;
+  --text-label: 0.75rem;
 
   /* Rhythm */
   --space-section: clamp(5rem, 4rem + 8vw, 12rem);

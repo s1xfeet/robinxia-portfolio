@@ -50,7 +50,8 @@
   border: 1px solid var(--color-hairline);
   border-radius: 3px;
   color: var(--color-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.62rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -96,6 +97,8 @@
 
 .scene__client {
   font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-stretch: var(--stretch-display);
   line-height: 0.8;
   text-transform: uppercase;
   position: relative;
@@ -117,7 +120,8 @@
 }
 
 .metric dt {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -126,7 +130,8 @@
 
 .metric dd {
   margin: 0.35em 0 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 1rem;
   color: var(--color-tc);
   font-variant-numeric: tabular-nums;

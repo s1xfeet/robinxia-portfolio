@@ -195,6 +195,8 @@
 
 .tile__client {
   font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-stretch: var(--stretch-display);
   font-size: clamp(1rem, 0.8rem + 0.9vw, 1.6rem);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -203,7 +205,8 @@
 }
 
 .tile__label {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -218,7 +221,8 @@
      lines, with the same legibility shadow */
   position: relative;
   z-index: 1;
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
+  font-weight: var(--weight-label);
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   color: var(--color-text-dim);

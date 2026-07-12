@@ -1,39 +1,15 @@
 /* ============================================================
-   FONTS — self-hosted (SIL OFL). Bebas Neue display,
-   Archivo variable for body (Inter kept as glyph fallback),
-   JetBrains Mono variable for mono. font-display: swap
-   throughout. Served as subsetted woff2 (latin + punctuation/
-   arrows/geometric); source .ttf files stay out of the deploy.
+   FONTS — self-hosted (SIL OFL). One family: Archivo variable
+   (wght 100-900, wdth 62-125, tnum). The whole type system is
+   two variations of this file — condensed display + normal text.
+   Served as subsetted woff2; source .ttf stays out of the deploy.
    ============================================================ */
-
-@font-face {
-  font-family: "Bebas Neue";
-  src: url("../assets/fonts/BebasNeue-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 @font-face {
   font-family: "Archivo";
   src: url("../assets/fonts/Archivo-Variable.woff2") format("woff2-variations");
   font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "JetBrains Mono";
-  src: url("../assets/fonts/JetBrainsMono-Variable.woff2") format("woff2-variations");
-  font-weight: 100 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Inter";
-  src: url("../assets/fonts/Inter-Variable.woff2") format("woff2-variations");
-  font-weight: 100 900;
+  font-stretch: 62% 125%;
   font-style: normal;
   font-display: swap;
 }
