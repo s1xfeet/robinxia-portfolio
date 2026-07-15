@@ -222,7 +222,8 @@ async function handleStats(request, url, env) {
   }
 
   const days = clampDays(url.searchParams.get("days"));
-  const html = await renderStatsPage(env, days);
+  const selectedDay = parseValidDay(url.searchParams.get("day"));
+  const html = await renderStatsPage(env, days, selectedDay);
   return new Response(html, {
     status: 200,
     headers: { ...NO_STORE_HEADERS, "Content-Type": "text/html; charset=utf-8" },
@@ -399,32 +400,44 @@ async function safeQuery(env, sql, params = []) {
   }
 }
 
+/** `AND ts < ?` fragment for the optional day-drill-down upper bound,
+ *  spliced in right after the `ts > ?` lower bound in every query below.
+ *  `untilMs == null` (range view) yields an empty fragment/params — the
+ *  exact SQL and params every one of these helpers already sent before day
+ *  drill-down existed. */
+function untilClause(untilMs) {
+  return untilMs == null ? { sql: "", params: [] } : { sql: " AND ts < ?", params: [untilMs] };
+}
+
 /** Totals by event type, with unique-session counts. */
-function queryTotals(env, cutoff) {
+function queryTotals(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT event, COUNT(*) AS count, COUNT(DISTINCT session) AS sessions
-     FROM events WHERE ts > ? GROUP BY event ORDER BY count DESC`,
-    [cutoff]
+     FROM events WHERE ts > ?${until.sql} GROUP BY event ORDER BY count DESC`,
+    [sinceMs, ...until.params]
   );
 }
 
 /** Top-N labels for a given event type, e.g. wall_click / outbound / section_view. */
-function queryTopLabels(env, cutoff, eventName, limit) {
+function queryTopLabels(env, sinceMs, eventName, limit, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT label, COUNT(*) AS count FROM events
-     WHERE ts > ? AND event = ? AND label != '' GROUP BY label ORDER BY count DESC LIMIT ?`,
-    [cutoff, eventName, limit]
+     WHERE ts > ?${until.sql} AND event = ? AND label != '' GROUP BY label ORDER BY count DESC LIMIT ?`,
+    [sinceMs, ...until.params, eventName, limit]
   );
 }
 
 /** Average of `value` for one event type. Returns a number or null. */
-async function queryAvgValue(env, cutoff, eventName) {
+async function queryAvgValue(env, sinceMs, eventName, untilMs = null) {
+  const until = untilClause(untilMs);
   const rows = await safeQuery(
     env,
-    `SELECT AVG(value) AS avg_v FROM events WHERE ts > ? AND event = ?`,
-    [cutoff, eventName]
+    `SELECT AVG(value) AS avg_v FROM events WHERE ts > ?${until.sql} AND event = ?`,
+    [sinceMs, ...until.params, eventName]
   );
   if (!rows || rows.length === 0) return null;
   const v = Number(rows[0].avg_v);
@@ -434,12 +447,13 @@ async function queryAvgValue(env, cutoff, eventName) {
 /** Top-N values of a pageview dimension (device / country / referrer).
  *  `column` is always one of our own hardcoded literals below — never
  *  user input — so this string interpolation is safe. */
-function queryPageviewDimension(env, cutoff, column, limit) {
+function queryPageviewDimension(env, sinceMs, column, limit, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT ${column} AS value, COUNT(*) AS count FROM events
-     WHERE ts > ? AND event = 'pageview' AND ${column} != '' GROUP BY ${column} ORDER BY count DESC LIMIT ?`,
-    [cutoff, limit]
+     WHERE ts > ?${until.sql} AND event = 'pageview' AND ${column} != '' GROUP BY ${column} ORDER BY count DESC LIMIT ?`,
+    [sinceMs, ...until.params, limit]
   );
 }
 
@@ -447,60 +461,72 @@ function queryPageviewDimension(env, cutoff, column, limit) {
  *  happens in JS via `classifyReferrer`, since hostnames are too messy to
  *  bucket cleanly in SQL. No LIMIT: the long tail still needs to be seen
  *  by the classifier so it can fold into the right channel. */
-function queryReferrerCounts(env, cutoff) {
+function queryReferrerCounts(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT referrer, COUNT(*) AS n FROM events
-     WHERE ts > ? AND event = 'pageview' GROUP BY referrer`,
-    [cutoff]
+     WHERE ts > ?${until.sql} AND event = 'pageview' GROUP BY referrer`,
+    [sinceMs, ...until.params]
   );
 }
 
 /** One referrer per session (first/only pageview referrer seen — MIN just
  *  picks a stable single value per session). Used to tie a session's later
  *  engagement events back to the channel that brought it in. */
-function querySessionReferrers(env, cutoff) {
+function querySessionReferrers(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT session, MIN(referrer) AS referrer FROM events
-     WHERE ts > ? AND event = 'pageview' GROUP BY session`,
-    [cutoff]
+     WHERE ts > ?${until.sql} AND event = 'pageview' GROUP BY session`,
+    [sinceMs, ...until.params]
   );
 }
 
-function querySessionWallClicks(env, cutoff) {
+function querySessionWallClicks(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT session, COUNT(*) AS clicks FROM events
-     WHERE ts > ? AND event = 'wall_click' GROUP BY session`,
-    [cutoff]
+     WHERE ts > ?${until.sql} AND event = 'wall_click' GROUP BY session`,
+    [sinceMs, ...until.params]
   );
 }
 
-function querySessionScrollDepth(env, cutoff) {
+function querySessionScrollDepth(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT session, MAX(value) AS depth FROM events
-     WHERE ts > ? AND event = 'scroll_depth' GROUP BY session`,
-    [cutoff]
+     WHERE ts > ?${until.sql} AND event = 'scroll_depth' GROUP BY session`,
+    [sinceMs, ...until.params]
   );
 }
 
-function queryScrollDepth(env, cutoff) {
+function queryScrollDepth(env, sinceMs, untilMs = null) {
+  const until = untilClause(untilMs);
   return safeQuery(
     env,
     `SELECT value AS bucket, COUNT(*) AS count FROM events
-     WHERE ts > ? AND event = 'scroll_depth' GROUP BY value ORDER BY bucket ASC`,
-    [cutoff]
+     WHERE ts > ?${until.sql} AND event = 'scroll_depth' GROUP BY value ORDER BY bucket ASC`,
+    [sinceMs, ...until.params]
   );
 }
 
-function queryDaily(env, cutoff) {
+/** Daily pageviews + unique visitors, bucketed by TORONTO-LOCAL calendar
+ *  date. `offsetMs` (from `torontoOffsetMs`) shifts each UTC `ts` into
+ *  Toronto's wall-clock reading before SQLite's `date()` reads off the
+ *  calendar day — a single current offset for the whole query, not a
+ *  per-row lookup (see `torontoOffsetMs` for the DST tradeoff this makes).
+ *  Always range-scoped ( `cutoff`, not the day-drill-down window) — this is
+ *  the navigator strip a day is selected *from*. */
+function queryDaily(env, cutoff, offsetMs) {
   return safeQuery(
     env,
-    `SELECT date(ts / 1000, 'unixepoch') AS day, COUNT(*) AS count FROM events
-     WHERE ts > ? AND event = 'pageview' GROUP BY day ORDER BY day ASC`,
-    [cutoff]
+    `SELECT date((ts + ?) / 1000, 'unixepoch') AS day, COUNT(*) AS count, COUNT(DISTINCT session) AS visitors
+     FROM events WHERE ts > ? AND event = 'pageview' GROUP BY day ORDER BY day ASC`,
+    [offsetMs, cutoff]
   );
 }
 
@@ -544,6 +570,27 @@ function zonedWallClockToUtcMs(y, m, d, h, mi, s, zone) {
   return guess + (guess - observedAsUtc);
 }
 
+/** Current UTC offset for America/Toronto, in ms (negative — e.g. -4h during
+ *  EDT). Lets SQL bucket a UTC epoch-ms `ts` into Toronto-local calendar
+ *  dates via `date((ts + offsetMs) / 1000, 'unixepoch')`. Computed once from
+ *  "now" per request rather than per-row — DST-safe day to day, but a query
+ *  window that straddles a DST transition can misbucket the edge rows by up
+ *  to an hour (the same tolerance `startOfWeekTorontoMs` below already
+ *  accepts). */
+function torontoOffsetMs(nowMs) {
+  const zone = "America/Toronto";
+  const parts = zonedParts(nowMs, zone);
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) % 24,
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return asUtc - nowMs;
+}
+
 /** UTC epoch-ms of the most recent Monday 00:00 in America/Toronto, at or
  *  before `nowMs`. DST-aware (no fixed UTC offset); being off by up to an
  *  hour right at a DST transition edge is acceptable. */
@@ -575,6 +622,65 @@ function formatWeekStartLabel(weekStartMs) {
   const parts = {};
   for (const p of dtf.formatToParts(new Date(weekStartMs))) parts[p.type] = p.value;
   return `${parts.weekday} ${parts.month} ${parts.day}`;
+}
+
+// ---------------------------------------------------------------------------
+// Day drill-down (?day=YYYY-MM-DD) — scopes every dashboard card except the
+// daily-chart strip to one Toronto-local calendar day.
+// ---------------------------------------------------------------------------
+
+const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Split a "YYYY-MM-DD" string into numeric parts, or null if it doesn't
+ *  even match the shape. Doesn't check the date is real — see `parseValidDay`. */
+function parseDayParts(dayStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dayStr || ""));
+  if (!m) return null;
+  return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+}
+
+/** Validate a `?day=` query value: shape-matches AND is a real calendar
+ *  date. Round-trips the parsed Y-M-D through the tz helper — a bogus date
+ *  (Feb 30, month 13) normalizes to a different Y-M-D on the way back, so a
+ *  mismatch means it wasn't real. Returns null (never throws) on anything
+ *  invalid or absent, since this always sees untrusted query-string input;
+ *  the caller falls back to the normal range view. */
+function parseValidDay(raw) {
+  const parts = parseDayParts(raw);
+  if (!parts) return null;
+  const { year, month, day } = parts;
+  const dayStartMs = zonedWallClockToUtcMs(year, month, day, 0, 0, 0, "America/Toronto");
+  const back = zonedParts(dayStartMs, "America/Toronto");
+  if (Number(back.year) !== year || Number(back.month) !== month || Number(back.day) !== day) {
+    return null;
+  }
+  return { str: String(raw), year, month, day };
+}
+
+/** Half-open [dayStart, nextDayStart) window in UTC ms for one Toronto-local
+ *  calendar day, as the (sinceMs, untilMs) pair the query helpers expect —
+ *  `ts > sinceMs AND ts < untilMs`, so sinceMs is dayStart minus 1ms.
+ *  `day + 1` rolls over month/year edges via `Date.UTC`'s own normalization
+ *  inside `zonedWallClockToUtcMs`, so this stays correct at those
+ *  boundaries (verified: Dec 31 -> Jan 1, Jan 31 -> Feb 1). */
+function dayWindowMs({ year, month, day }) {
+  const dayStartMs = zonedWallClockToUtcMs(year, month, day, 0, 0, 0, "America/Toronto");
+  const nextDayStartMs = zonedWallClockToUtcMs(year, month, day + 1, 0, 0, 0, "America/Toronto");
+  return { sinceMs: dayStartMs - 1, untilMs: nextDayStartMs };
+}
+
+/** "Jul 14" for a {year, month, day} calendar date. */
+function monthDayLabel({ month, day }) {
+  return `${MONTH_NAMES[month - 1] || ""} ${day}`;
+}
+
+/** "Tue Jul 14" for a {year, month, day} calendar date. A calendar date's
+ *  weekday doesn't depend on timezone, so Date.UTC + getUTCDay is exact —
+ *  no zone conversion needed here. */
+function weekdayMonthDayLabel(parts) {
+  const weekday = WEEKDAY_NAMES[new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()];
+  return `${weekday} ${monthDayLabel(parts)}`;
 }
 
 /** COUNT(*) and COUNT(DISTINCT session) for one event type within
@@ -719,12 +825,33 @@ function buildSourceQuality(sessionReferrers, sessionClicks, sessionScroll) {
     .sort((a, b) => b.sessions - a.sessions);
 }
 
-async function renderStatsPage(env, days) {
+/** Visitor/pageview counts for the day-view banner, derived from the
+ *  already day-scoped `totals` rows (the `pageview` row: count = pageviews,
+ *  sessions = visitors). Zero when there's no pageview row — a valid day
+ *  with no traffic — or when `totals` itself failed to load; never null, so
+ *  the banner always has something safe to render. */
+function dayBannerStats(totals) {
+  const row = (totals || []).find((r) => r.event === "pageview");
+  return {
+    visitors: row ? Number(row.sessions) || 0 : 0,
+    pageviews: row ? Number(row.count) || 0 : 0,
+  };
+}
+
+async function renderStatsPage(env, days, selectedDay) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 
   const nowMs = Date.now();
   const weekStart = startOfWeekTorontoMs(nowMs);
   const lastWeekStart = weekStart - 7 * 24 * 60 * 60 * 1000;
+  const offsetMs = torontoOffsetMs(nowMs);
+
+  // Range view scopes every card to `cutoff` (untilMs null = no upper
+  // bound). Day drill-down scopes the same cards to one Toronto-local
+  // calendar day instead. Either way, `queryDaily` below stays on `cutoff` —
+  // the daily-chart strip is always the range navigator, never the
+  // drilled-down day.
+  const { sinceMs, untilMs } = selectedDay ? dayWindowMs(selectedDay) : { sinceMs: cutoff, untilMs: null };
 
   const [
     totals,
@@ -749,20 +876,20 @@ async function renderStatsPage(env, days) {
     scrollLastWeek,
     weekReferrerCounts,
   ] = await Promise.all([
-    queryTotals(env, cutoff),
-    queryTopLabels(env, cutoff, "wall_click", 15),
-    queryTopLabels(env, cutoff, "outbound", 15),
-    queryTopLabels(env, cutoff, "section_view", 15),
-    queryScrollDepth(env, cutoff),
-    queryDaily(env, cutoff),
-    queryPageviewDimension(env, cutoff, "device", 10),
-    queryPageviewDimension(env, cutoff, "country", 10),
-    queryAvgValue(env, cutoff, "time_on_page"),
-    queryAvgValue(env, cutoff, "scroll_depth"),
-    queryReferrerCounts(env, cutoff),
-    querySessionReferrers(env, cutoff),
-    querySessionWallClicks(env, cutoff),
-    querySessionScrollDepth(env, cutoff),
+    queryTotals(env, sinceMs, untilMs),
+    queryTopLabels(env, sinceMs, "wall_click", 15, untilMs),
+    queryTopLabels(env, sinceMs, "outbound", 15, untilMs),
+    queryTopLabels(env, sinceMs, "section_view", 15, untilMs),
+    queryScrollDepth(env, sinceMs, untilMs),
+    queryDaily(env, cutoff, offsetMs),
+    queryPageviewDimension(env, sinceMs, "device", 10, untilMs),
+    queryPageviewDimension(env, sinceMs, "country", 10, untilMs),
+    queryAvgValue(env, sinceMs, "time_on_page", untilMs),
+    queryAvgValue(env, sinceMs, "scroll_depth", untilMs),
+    queryReferrerCounts(env, sinceMs, untilMs),
+    querySessionReferrers(env, sinceMs, untilMs),
+    querySessionWallClicks(env, sinceMs, untilMs),
+    querySessionScrollDepth(env, sinceMs, untilMs),
     queryEventWindow(env, "pageview", weekStart, null),
     queryEventWindow(env, "pageview", lastWeekStart, weekStart),
     queryEventWindow(env, "wall_click", weekStart, null),
@@ -784,9 +911,12 @@ async function renderStatsPage(env, days) {
     scrollLastRows: scrollLastWeek,
     referrerCounts: weekReferrerCounts,
   });
+  const dayStats = selectedDay ? dayBannerStats(totals) : null;
 
   return renderPage({
     days,
+    selectedDay,
+    dayStats,
     totals,
     wallClicks,
     outbound,
@@ -904,6 +1034,27 @@ function renderWeekRecap(recap) {
   </section>`;
 }
 
+/** Prominent "Showing <day>" banner for the day drill-down, rendered
+ *  directly under the range nav in place of the (hidden) "This week" panel.
+ *  Reuses `.card` styling so it feels native to the rest of the dashboard;
+ *  the accent border/background make it clearly the focus while a day is
+ *  selected. `days` is the still-active range, so "back" returns to the
+ *  same strip the day was clicked from. */
+function renderDayBanner(selectedDay, dayStats, days) {
+  const label = escapeHtml(weekdayMonthDayLabel(selectedDay));
+  const { visitors, pageviews } = dayStats;
+  const backHref = escapeHtml(`/stats?days=${days}`);
+  return `
+  <section class="card day-banner">
+    <p class="day-banner-headline">
+      Showing <strong>${label}</strong>
+      · <strong>${visitors.toLocaleString()}</strong> visitor${visitors === 1 ? "" : "s"}
+      · <strong>${pageviews.toLocaleString()}</strong> pageview${pageviews === 1 ? "" : "s"}
+    </p>
+    <a class="day-banner-back" href="${backHref}">← back to last ${days} day${days === 1 ? "" : "s"}</a>
+  </section>`;
+}
+
 /** One row per channel for the "Source quality" card: sessions, avg scroll
  *  depth, and wall-clicks-per-session. Not a `barRows` list — there's no
  *  single "value" to bar-chart, just a few numbers side by side. */
@@ -924,7 +1075,7 @@ function sourceQualityRows(channels) {
     .join("");
 }
 
-function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, trafficSources, sourceQuality, avgTimeOnPage, avgScrollDepth, weekRecap }) {
+function renderPage({ days, selectedDay, dayStats, totals, wallClicks, outbound, sections, scrollDepth, daily, devices, countries, trafficSources, sourceQuality, avgTimeOnPage, avgScrollDepth, weekRecap }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -972,10 +1123,23 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
   .stat-row { display: flex; gap: 2rem; flex-wrap: wrap; }
   .stat-value { font-size: 1.9rem; font-weight: 700; color: #eb8a3a; font-variant-numeric: tabular-nums; line-height: 1.15; }
   .stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #837a6d; margin-top: .2rem; }
-  .daily-row { display: flex; align-items: flex-end; gap: 3px; height: 90px; margin-top: .5rem; }
-  .daily-bar { flex: 1; background: linear-gradient(180deg, #eb8a3a, #d94f30); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
-  .daily-labels { display: flex; gap: 3px; margin-top: .35rem; }
-  .daily-labels span { flex: 1; text-align: center; font-size: .62rem; color: #6b6255; font-family: ui-monospace, monospace; }
+  .daily-row { display: flex; align-items: flex-end; gap: 3px; margin-top: .5rem; }
+  .daily-col {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    text-decoration: none; border-radius: 4px; padding: 3px 2px 2px;
+  }
+  .daily-col:hover { background: #1c1812; }
+  .daily-col:hover .daily-label { color: #b8ae9d; }
+  .daily-col:focus-visible { outline: 2px solid #d94f30; outline-offset: 2px; }
+  .daily-col.is-selected { background: #241a10; }
+  .daily-col.is-selected .daily-bar { background: linear-gradient(180deg, #ffb35c, #eb8a3a); }
+  .daily-col.is-selected .daily-label { color: #eb8a3a; }
+  .daily-bar-track { height: 90px; display: flex; align-items: flex-end; }
+  .daily-bar { width: 100%; background: linear-gradient(180deg, #eb8a3a, #d94f30); border-radius: 3px 3px 0 0; min-height: 2px; }
+  .daily-label {
+    margin-top: .35rem; text-align: center; font-size: .62rem; color: #6b6255;
+    font-family: ui-monospace, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .quality-row { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding: .4rem 0; border-bottom: 1px solid #1c1812; font-size: .82rem; }
   .quality-row:last-child { border-bottom: none; }
   .quality-channel { color: #cfc7b8; font-family: ui-monospace, monospace; white-space: nowrap; }
@@ -985,6 +1149,13 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
   .week-recap-sub { color: #837a6d; font-size: .8rem; margin: 0 0 .25rem; font-family: ui-monospace, monospace; }
   .week-recap-source { color: #b8ae9d; font-size: .82rem; margin: 1.1rem 0 0; }
   .week-recap-source strong { color: #e8e3da; }
+  .day-banner {
+    margin: 0 0 1.75rem; border-color: #d94f30; background: #1a1108;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .day-banner-headline { margin: 0; font-size: 1.05rem; }
+  .day-banner-headline strong { color: #eb8a3a; }
+  .day-banner-back { font-size: .82rem; font-family: ui-monospace, monospace; white-space: nowrap; }
   .delta { font-weight: 600; font-variant-numeric: tabular-nums; margin-left: .35rem; text-transform: none; letter-spacing: 0; }
   .delta-up { color: #7fb069; }
   .delta-down { color: #d94f30; }
@@ -998,9 +1169,11 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
   <h1>Portfolio Analytics</h1>
   <p class="sub">last ${days} day${days === 1 ? "" : "s"} · portfolio.relatedshortschanger.com</p>
 
-  ${renderWeekRecap(weekRecap)}
+  ${selectedDay ? "" : renderWeekRecap(weekRecap)}
 
   <nav class="nav">${daysNav(days)}</nav>
+
+  ${selectedDay ? renderDayBanner(selectedDay, dayStats, days) : ""}
 
   <div class="grid">
     <div class="card">
@@ -1022,8 +1195,8 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
     </div>
 
     <div class="card wide">
-      <h2>Daily pageviews</h2>
-      ${renderDailyChart(daily)}
+      <h2>Daily traffic</h2>
+      ${renderDailyChart(daily, days, selectedDay)}
     </div>
 
     <div class="card">
@@ -1067,20 +1240,38 @@ function renderPage({ days, totals, wallClicks, outbound, sections, scrollDepth,
 </html>`;
 }
 
-function renderDailyChart(daily) {
+/** The daily-chart navigator strip: one clickable column per day, bar height
+ *  by VISITORS (the metric that matters — pageviews still show in the
+ *  tooltip). Each column links to `?day={day}&days={activeDays}` so
+ *  drilling into a day preserves the range it was clicked from; the
+ *  currently-selected day (if any) gets `.is-selected`. Always rendered
+ *  over the range window regardless of day selection — this is the strip a
+ *  day is picked *from*, so it never scopes to the picked day itself. */
+function renderDailyChart(daily, days, selectedDay) {
   if (!daily || daily.length === 0) {
     return `<p class="empty">No data yet.</p>`;
   }
-  const max = Math.max(...daily.map((r) => Number(r.count) || 0), 1);
-  const bars = daily
-    .map((r) => `<div class="daily-bar" style="height:${Math.max(2, Math.round((Number(r.count) / max) * 100))}%" title="${escapeHtml(String(r.count))}"></div>`)
-    .join("");
-  const labels = daily
+  const max = Math.max(...daily.map((r) => Number(r.visitors) || 0), 1);
+  const selectedStr = selectedDay ? selectedDay.str : null;
+  const cols = daily
     .map((r) => {
-      const d = new Date(r.day);
-      const label = isNaN(d) ? "" : `${d.getMonth() + 1}/${d.getDate()}`;
-      return `<span>${label}</span>`;
+      const day = String(r.day);
+      const parts = parseDayParts(day);
+      const visitors = Number(r.visitors) || 0;
+      const count = Number(r.count) || 0;
+      const heightPct = Math.max(2, Math.round((visitors / max) * 100));
+      const axisLabel = parts ? `${parts.month}/${parts.day}` : "";
+      const tooltip = parts
+        ? `${monthDayLabel(parts)}: ${visitors} visitor${visitors === 1 ? "" : "s"} · ${count} view${count === 1 ? "" : "s"}`
+        : "";
+      const selectedClass = day === selectedStr ? " is-selected" : "";
+      const href = escapeHtml(`/stats?day=${day}&days=${days}`);
+      const label = escapeHtml(tooltip);
+      return `<a class="daily-col${selectedClass}" href="${href}" title="${label}" aria-label="${label}">
+        <span class="daily-bar-track"><span class="daily-bar" style="height:${heightPct}%"></span></span>
+        <span class="daily-label">${escapeHtml(axisLabel)}</span>
+      </a>`;
     })
     .join("");
-  return `<div class="daily-row">${bars}</div><div class="daily-labels">${labels}</div>`;
+  return `<div class="daily-row">${cols}</div>`;
 }
