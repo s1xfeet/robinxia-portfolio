@@ -216,7 +216,22 @@
 }
 
 /* hover / focus: the screen lifts, its edge goes record-red, the button fills */
-.testimonial-screen:hover .testimonial-frame,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .testimonial-screen:hover .testimonial-frame {
+    transform: translateY(-4px) scale(1.012);
+    box-shadow:
+      0 clamp(1.25rem, 3vh, 2.5rem) clamp(2.5rem, 6vh, 5rem) rgba(0, 0, 0, 0.6),
+      0 0 0 1px var(--color-rec);
+  }
+
+  .testimonial-screen:hover .testimonial-play {
+    transform: translate(-50%, -50%) scale(1.08);
+    background: var(--color-rec);
+    border-color: var(--color-rec);
+  }
+}
+
 .testimonial-screen:focus-visible .testimonial-frame {
   transform: translateY(-4px) scale(1.012);
   box-shadow:
@@ -224,7 +239,6 @@
     0 0 0 1px var(--color-rec);
 }
 
-.testimonial-screen:hover .testimonial-play,
 .testimonial-screen:focus-visible .testimonial-play {
   transform: translate(-50%, -50%) scale(1.08);
   background: var(--color-rec);

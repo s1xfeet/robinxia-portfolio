@@ -11,6 +11,8 @@ export function initCursor() {
   const dot = document.createElement("div");
   dot.className = "mx-cursor";
   dot.setAttribute("aria-hidden", "true");
+  dot.innerHTML =
+    '<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="12.5" /></svg>';
   const label = document.createElement("div");
   label.className = "mx-cursor-label";
   label.setAttribute("aria-hidden", "true");
@@ -56,6 +58,7 @@ export function initCursor() {
         label.classList.remove("is-on");
       }
       dot.classList.toggle("is-hot", isHot(event.target));
+      wake();
     },
     { passive: true }
   );
@@ -66,14 +69,33 @@ export function initCursor() {
     seen = false;
   });
 
+  let rafId = 0;
   const frame = () => {
     x += (tx - x) * 0.22;
     y += (ty - y) * 0.22;
     lx += (tx - lx) * 0.14;
     ly += (ty - ly) * 0.14;
+    const settled =
+      Math.abs(tx - x) < 0.1 &&
+      Math.abs(ty - y) < 0.1 &&
+      Math.abs(tx - lx) < 0.1 &&
+      Math.abs(ty - ly) < 0.1;
+    if (settled) {
+      x = tx;
+      y = ty;
+      lx = tx;
+      ly = ty;
+    }
     dot.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     label.style.transform = `translate3d(${lx + 16}px, ${ly + 20}px, 0)`;
-    requestAnimationFrame(frame);
+    if (settled) {
+      rafId = 0;
+      return;
+    }
+    rafId = requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  const wake = () => {
+    if (!rafId) rafId = requestAnimationFrame(frame);
+  };
+  wake();
 }

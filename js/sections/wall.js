@@ -1,5 +1,6 @@
 // Work wall: renders the marquee rows from wall-data.js, maps hero scroll
-// progress onto --wall-p, and flips the wall interactive once it is front.
+// progress onto direct style writes (#wall, .wall-scrim, .hero-overlay),
+// and flips the wall interactive once it is front.
 // Marquee motion and its reduced-motion stop live in CSS; this feeds state.
 //
 // v2: tiles with a clip render a live, muted, looping BACKGROUND <video>.
@@ -513,11 +514,29 @@ export function initWall() {
   let ticking = false;
   let live = false;
 
+  const scrimEl = hero.querySelector(".wall-scrim");
+  const overlayEl = hero.querySelector(".hero-overlay");
+  const mqReduceP = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const mqNarrowP = window.matchMedia("(max-width: 700px)");
+
   const update = () => {
     ticking = false;
     const runway = hero.offsetHeight - window.innerHeight;
     const p = runway > 0 ? Math.min(1, Math.max(0, window.scrollY / runway)) : 0;
-    hero.style.setProperty("--wall-p", p.toFixed(4));
+    // Direct writes on the three consumers — never a CSS var on the
+    // section, which would recalc style for every tile each frame.
+    const reduce = mqReduceP.matches;
+    wall.style.transform = reduce ? "" : `scale(${(1.055 - 0.055 * p).toFixed(4)})`;
+    wall.style.opacity = (0.72 + 0.28 * p).toFixed(3);
+    if (scrimEl) {
+      const base = mqNarrowP.matches ? 0.94 : 0.87;
+      const range = mqNarrowP.matches ? 0.86 : 0.79;
+      scrimEl.style.opacity = (base - range * p).toFixed(3);
+    }
+    if (overlayEl) {
+      overlayEl.style.opacity = Math.min(1, Math.max(0, 1 - 1.45 * p)).toFixed(3);
+      overlayEl.style.translate = reduce ? "" : `0 ${(-2.5 * p).toFixed(3)}rem`;
+    }
     // First real scroll into the runway springs the armed wall open.
     if (p >= 0.12) fireEntrance();
     if (!live && p >= 0.6) {
@@ -540,6 +559,8 @@ export function initWall() {
 
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
+  mqReduceP.addEventListener?.("change", onScroll);
+  mqNarrowP.addEventListener?.("change", onScroll);
   update();
 
   if ("IntersectionObserver" in window) {

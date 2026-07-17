@@ -63,8 +63,9 @@
        is exactly the resting wall zoomed to 55% about its own center —
        every tile converges toward that single point instead of
        shuffling past its neighbors on the way in.
-   Tile opacity is untouched — it belongs to the scroll-linked --wall-p
-   calc; the bloom uses filter so the two never fight. */
+   Tile opacity is untouched — the scroll-linked brightening lives on
+   .wall (driven by wall.js); the bloom uses filter so the two never
+   fight. */
 @media (prefers-reduced-motion: no-preference) {
   .wall--enter .tile {
     animation: mx-tile-bloom 620ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
@@ -174,34 +175,47 @@
   position: fixed;
   left: 0;
   top: 0;
-  /* Self-center on the JS-driven point: the % offset tracks the box as
-     width/height animate (is-hot), unlike a fixed -4px left/top which
-     left the grown circle hanging off-center past the pointer.
-     `translate` composes before the JS `transform`, so the dot's center
-     always sits exactly on (x, y). */
+  /* Self-center on the JS-driven point. `translate` composes before the
+     JS `transform`, so the ring's center always sits exactly on (x, y). */
   translate: -50% -50%;
   z-index: 10020;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid var(--color-tc);
+  width: 26px;
+  height: 26px;
   pointer-events: none;
   opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.mx-cursor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The ring grows via transform on the circle geometry; non-scaling-stroke
+   keeps the hairline at 1px at both sizes, so the grow never leaves the
+   compositor-friendly path (no width/height animation). */
+.mx-cursor circle {
+  fill: none;
+  stroke: var(--color-tc);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.308); /* renders as the 8px resting dot */
   transition:
-    opacity 200ms ease,
-    width 180ms var(--ease-out-expo),
-    height 180ms var(--ease-out-expo),
-    border-color 180ms ease;
+    transform 180ms var(--ease-out-expo),
+    stroke 180ms ease;
 }
 
 .mx-cursor.is-on {
   opacity: 1;
 }
 
-.mx-cursor.is-hot {
-  width: 26px;
-  height: 26px;
-  border-color: var(--color-rec);
+.mx-cursor.is-hot circle {
+  transform: scale(1);
+  stroke: var(--color-rec);
 }
 
 .mx-cursor-label {

@@ -1,9 +1,10 @@
 /* SECTION: hero — the work wall.
    A 230vh scroll runway with a sticky 100svh stage. Behind the hero
-   statement: three auto-scrolling marquee rows of work tiles. JS sets
-   --wall-p (0 → 1) inline on .section--hero; everything scroll-driven
-   below derives from it. JS also toggles .is-live / .is-offscreen on
-   .wall and sets --row-dur inline on each .wall-track. */
+   statement: three auto-scrolling marquee rows of work tiles. wall.js
+   maps scroll progress (0 → 1) to inline styles on #wall, .wall-scrim
+   and .hero-overlay each frame; CSS holds only the p = 0 resting values.
+   JS also toggles .is-live / .is-offscreen on .wall and sets --row-dur
+   inline on each .wall-track. */
 
 /* ---- runway + stage ------------------------------------------- */
 
@@ -34,8 +35,11 @@
   gap: clamp(0.75rem, 2vh, 1.5rem);
   padding-block: 5.5rem 3rem;
   pointer-events: none;
-  /* settles from a gentle over-scale to 1 as the user scrolls */
-  transform: scale(calc(1.055 - 0.055 * var(--wall-p, 0)));
+  /* settles from a gentle over-scale to 1 as the user scrolls; wall.js
+     drives transform + opacity directly per frame (no CSS var — a var
+     flip on the section recalcs style for every tile) */
+  transform: scale(1.055);
+  opacity: 0.72;
 }
 
 .wall.is-live {
@@ -136,7 +140,6 @@
   padding: clamp(0.6rem, 1.2vw, 1rem);
   text-decoration: none;
   color: var(--color-text);
-  opacity: calc(0.72 + 0.28 * var(--wall-p, 0));
   transition:
     transform var(--duration-fast) var(--ease-out-expo),
     border-color var(--duration-fast) ease,
@@ -245,7 +248,67 @@
    Hover / focus reads as pulling the "selected take" off a monitor wall:
    the tile lifts toward the viewer, the rec-red frame ignites and casts
    a glow, and the wall behind it falls away. */
-.tile[href]:hover,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .tile[href]:hover {
+    border-color: var(--color-rec);
+    opacity: 1;
+    transform: translateY(-6px) scale(1.05);
+    box-shadow:
+      0 14px 36px rgba(0, 0, 0, 0.6),
+      0 0 22px oklch(58% 0.22 27 / 0.4);
+    /* the grown tile can overlap the neighbouring rows — keep it on top */
+    z-index: 2;
+  }
+
+  /* Shorts tiles are narrow, so the standard scale barely reads on them —
+     they get a stronger step-forward to match the wide tiles' presence.
+     Rows keep overflow-y visible, so the extra height shows cleanly. */
+  .tile--tall[href]:hover {
+    transform: translateY(-6px) scale(1.14);
+  }
+
+  /* The top row must never move toward the fixed header: its hover lift is
+     dropped (growth already reads through the top-pinned scale + shadow).
+     This is the fallback path — the proximity field's inline transforms
+     never lift at all. */
+  .wall-row:nth-child(1) .tile[href]:hover {
+    transform: scale(1.05);
+  }
+
+  .wall-row:nth-child(1) .tile--tall[href]:hover {
+    transform: scale(1.14);
+  }
+
+  /* Spotlight: in a hovered / focused row, every tile that is NOT the selected
+     take recedes so the live one owns the eye. Opacity + desaturate + a dim,
+     all compositor-friendly; the hovered tile is excluded so it stays lit. */
+  .wall-row:hover .tile:not(:hover) {
+    opacity: 0.3;
+    filter: saturate(0.6) brightness(0.8);
+  }
+
+  /* Viewfinder locks on: the top tick flips to rec-red, grows, and eases
+     outward while the mirrored bottom-right corner snaps in at the same
+     size, bracketing the frame like a focus reticle engaging. */
+  .tile[href]:hover::before {
+    border-color: var(--color-rec);
+    opacity: 1;
+    width: 0.75rem;
+    height: 0.75rem;
+    transform: translate(-0.1rem, -0.1rem);
+  }
+
+  .tile[href]:hover::after {
+    opacity: 1;
+    width: 0.75rem;
+    height: 0.75rem;
+    transform: translate(0, 0);
+  }
+}
+
+/* keyboard twins of the hover states above — ungated on purpose so focus
+   keeps the full lift / spotlight / reticle treatment on every device */
 .tile[href]:focus-visible {
   border-color: var(--color-rec);
   opacity: 1;
@@ -257,24 +320,14 @@
   z-index: 2;
 }
 
-/* Shorts tiles are narrow, so the standard scale barely reads on them —
-   they get a stronger step-forward to match the wide tiles' presence.
-   Rows keep overflow-y visible, so the extra height shows cleanly. */
-.tile--tall[href]:hover,
 .tile--tall[href]:focus-visible {
   transform: translateY(-6px) scale(1.14);
 }
 
-/* The top row must never move toward the fixed header: its hover lift is
-   dropped (growth already reads through the top-pinned scale + shadow).
-   This is the fallback path — the proximity field's inline transforms
-   never lift at all. */
-.wall-row:nth-child(1) .tile[href]:hover,
 .wall-row:nth-child(1) .tile[href]:focus-visible {
   transform: scale(1.05);
 }
 
-.wall-row:nth-child(1) .tile--tall[href]:hover,
 .wall-row:nth-child(1) .tile--tall[href]:focus-visible {
   transform: scale(1.14);
 }
@@ -284,19 +337,11 @@
   outline-offset: 2px;
 }
 
-/* Spotlight: in a hovered / focused row, every tile that is NOT the selected
-   take recedes so the live one owns the eye. Opacity + desaturate + a dim,
-   all compositor-friendly; the hovered tile is excluded so it stays lit. */
-.wall-row:hover .tile:not(:hover),
 .wall-row:focus-within .tile:not(:focus-visible):not(:hover) {
   opacity: 0.3;
   filter: saturate(0.6) brightness(0.8);
 }
 
-/* Viewfinder locks on: the top tick flips to rec-red, grows, and eases
-   outward while the mirrored bottom-right corner snaps in at the same
-   size, bracketing the frame like a focus reticle engaging. */
-.tile[href]:hover::before,
 .tile[href]:focus-visible::before {
   border-color: var(--color-rec);
   opacity: 1;
@@ -305,7 +350,6 @@
   transform: translate(-0.1rem, -0.1rem);
 }
 
-.tile[href]:hover::after,
 .tile[href]:focus-visible::after {
   opacity: 1;
   width: 0.75rem;
@@ -357,7 +401,13 @@
 /* On hover the bottom wash lifts a touch so the live frame reads vivid. It
    never fully clears: the text carries its own shadow (below), so CLIENT /
    label stay legible over even the brightest clip. */
-.tile[href]:hover .tile__scrim,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .tile[href]:hover .tile__scrim {
+    opacity: 0.78;
+  }
+}
+
 .tile[href]:focus-visible .tile__scrim {
   opacity: 0.78;
 }
@@ -376,7 +426,14 @@
 
 /* Selected take comes alive - the clip scales up and lights up a touch
    past neutral, like a monitor kicked to full output. */
-.tile[href]:hover .tile__video,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .tile[href]:hover .tile__video {
+    transform: scale(1.08);
+    filter: saturate(1.12) brightness(1.06);
+  }
+}
+
 .tile[href]:focus-visible .tile__video {
   transform: scale(1.08);
   filter: saturate(1.12) brightness(1.06);
@@ -394,7 +451,7 @@
     oklch(9% 0.005 270) 100%
   );
   /* ~0.87 at landing (text-safe), ~0.08 fully scrolled (wall vivid) */
-  opacity: calc(0.87 - 0.79 * var(--wall-p, 0));
+  opacity: 0.87;
 }
 
 /* ---- overlay (statement) ---------------------------------------- */
@@ -405,8 +462,6 @@
   display: grid;
   align-content: center;
   pointer-events: none; /* contains no interactive elements */
-  opacity: clamp(0, calc(1 - 1.45 * var(--wall-p, 0)), 1); /* gone by p≈0.7 */
-  translate: 0 calc(var(--wall-p, 0) * -2.5rem);
 }
 
 .hero-layout {
@@ -513,7 +568,14 @@
 /* Locked on: the outer link eases up and brightens over the breathing
    glow. Transition-only (the pulse keeps running on the svg), so both
    the enter and the exit ride the same smooth curve. */
-.hero-play:hover,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .hero-play:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55)) brightness(1.18);
+  }
+}
+
 .hero-play:focus-visible {
   transform: scale(1.1);
   filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55)) brightness(1.18);
@@ -567,11 +629,11 @@
 
   /* On a phone the wall sits directly under the hero overlay text with no
      room to keep them apart, so the landing scrim needs to sit darker than
-     desktop's ~0.87 floor. Same calc shape, still driven by --wall-p: ~0.94
+     desktop's ~0.87 floor. wall.js drives the same shape per frame: ~0.94
      at landing (buries the tiles further back), ~0.08 fully scrolled so the
      wall still reads vivid once the overlay has faded out. */
   .wall-scrim {
-    opacity: calc(0.94 - 0.86 * var(--wall-p, 0));
+    opacity: 0.94;
   }
 
   /* At this width the tiles are texture, not readable copy — the labels are
@@ -601,12 +663,11 @@
     animation: none;
   }
 
+  /* wall.js writes no inline transform under reduced motion, so the base
+     rule's resting over-scale must be neutralized here or it would apply
+     permanently. */
   .wall {
     transform: none;
-  }
-
-  .hero-overlay {
-    translate: none;
   }
 
   .hero-cue-arrow {

@@ -27,7 +27,13 @@
   transition: transform var(--duration-fast) var(--ease-out-expo);
 }
 
-.client-link:hover::after,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .client-link:hover::after {
+    transform: scaleX(1);
+  }
+}
+
 .client-link:focus-visible::after {
   transform: scaleX(1);
 }
@@ -58,7 +64,14 @@
   z-index: 20;
 }
 
-.client-link[data-tooltip]:hover::before,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .client-link[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .client-link[data-tooltip]:focus-visible::before {
   opacity: 1;
   transform: translateY(0);
@@ -328,32 +341,52 @@
     transform var(--duration-fast) var(--ease-out-expo);
 }
 
-.reel-item:hover,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .reel-item:hover {
+    transform: translateX(4px);
+    outline: none;
+  }
+
+  .reel-item:hover::before {
+    transform: scaleY(1);
+  }
+
+  .reel-item:hover .reel-item__no {
+    color: var(--color-rec);
+  }
+
+  .reel-item:hover .reel-item__title {
+    color: var(--color-text);
+  }
+
+  .reel-item:hover .reel-item__play {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .reel-item:focus-visible,
 .reel-item.is-active {
   transform: translateX(4px);
   outline: none;
 }
 
-.reel-item:hover::before,
 .reel-item:focus-visible::before,
 .reel-item.is-active::before {
   transform: scaleY(1);
 }
 
-.reel-item:hover .reel-item__no,
 .reel-item:focus-visible .reel-item__no,
 .reel-item.is-active .reel-item__no {
   color: var(--color-rec);
 }
 
-.reel-item:hover .reel-item__title,
 .reel-item:focus-visible .reel-item__title,
 .reel-item.is-active .reel-item__title {
   color: var(--color-text);
 }
 
-.reel-item:hover .reel-item__play,
 .reel-item:focus-visible .reel-item__play,
 .reel-item.is-active .reel-item__play {
   opacity: 1;
@@ -472,12 +505,21 @@
   transition: color var(--duration-fast) ease;
 }
 
-.nk-card-media:hover img,
+/* hover motion is fine-pointer only: a tap must not leave a sticky lifted/dimmed state */
+@media (hover: hover) and (pointer: fine) {
+  .nk-card-media:hover img {
+    transform: scale(1.05);
+  }
+
+  .nk-card-media:hover .nk-card-play {
+    color: var(--color-rec);
+  }
+}
+
 .nk-card-media:focus-visible img {
   transform: scale(1.05);
 }
 
-.nk-card-media:hover .nk-card-play,
 .nk-card-media:focus-visible .nk-card-play {
   color: var(--color-rec);
 }

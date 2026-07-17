@@ -58,10 +58,15 @@ export function initLightbox() {
 
   function close() {
     if (!overlay) return;
-    overlay.remove(); // dropping the iframe stops playback
+    const el = overlay;
     overlay = null;
     document.removeEventListener("keydown", onKey);
     document.documentElement.style.removeProperty("overflow");
+    // kill playback at the start of the fade — the exit must be silent
+    const iframe = el.querySelector("iframe");
+    if (iframe) iframe.removeAttribute("src");
+    el.classList.add("is-closing");
+    window.setTimeout(() => el.remove(), 180);
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
     lastFocus = null;
   }

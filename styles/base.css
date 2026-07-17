@@ -316,7 +316,7 @@ a {
   color: var(--color-text);
   opacity: 0;
   transform: translateY(16px);
-  animation: mobile-nav-in var(--duration-reveal) var(--ease-cine) forwards;
+  animation: mobile-nav-in 360ms var(--ease-cine) forwards;
   transition: color var(--duration-fast) ease;
 }
 
@@ -335,15 +335,13 @@ a {
   overflow-wrap: anywhere;
 }
 
-/* Stagger the rise + fade: each link picks up the delay steps already used
-   for scroll reveals elsewhere (atmosphere.css), just applied per nth-child
-   since this overlay opens on demand rather than on scroll. */
-.mobile-nav__item:nth-child(1) .mobile-nav__link { animation-delay: 80ms; }
-.mobile-nav__item:nth-child(2) .mobile-nav__link { animation-delay: 140ms; }
-.mobile-nav__item:nth-child(3) .mobile-nav__link { animation-delay: 200ms; }
-.mobile-nav__item:nth-child(4) .mobile-nav__link { animation-delay: 260ms; }
-.mobile-nav__item:nth-child(5) .mobile-nav__link { animation-delay: 320ms; }
-.mobile-nav__item:nth-child(6) .mobile-nav__link { animation-delay: 380ms; }
+/* Menu tempo: 40ms steps — a tap-opened surface must finish inside ~600ms, unlike the slower scroll reveals. */
+.mobile-nav__item:nth-child(1) .mobile-nav__link { animation-delay: 0ms; }
+.mobile-nav__item:nth-child(2) .mobile-nav__link { animation-delay: 40ms; }
+.mobile-nav__item:nth-child(3) .mobile-nav__link { animation-delay: 80ms; }
+.mobile-nav__item:nth-child(4) .mobile-nav__link { animation-delay: 120ms; }
+.mobile-nav__item:nth-child(5) .mobile-nav__link { animation-delay: 160ms; }
+.mobile-nav__item:nth-child(6) .mobile-nav__link { animation-delay: 200ms; }
 
 @keyframes mobile-nav-in {
   from {
@@ -416,6 +414,13 @@ a {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   animation: lightbox-fade var(--duration-fast) ease;
+  transition: opacity 150ms ease;
+}
+
+/* exit rides a transition (JS adds the class, removes the node after) */
+.lightbox.is-closing {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes lightbox-fade {
@@ -423,6 +428,8 @@ a {
   to { opacity: 1; }
 }
 
+/* the player lands physically: a 3% settle instead of appearing from
+   nowhere; centered origin is correct for a modal */
 .lightbox__frame {
   position: relative;
   width: min(100%, 1080px);
@@ -430,6 +437,14 @@ a {
   background: #000;
   border: 1px solid var(--color-hairline);
   box-shadow: 0 24px 70px oklch(0% 0 0 / 0.55);
+  animation: lightbox-frame-in 240ms var(--ease-out-expo) backwards;
+}
+
+@keyframes lightbox-frame-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
 
 .lightbox__frame--tall {
@@ -473,6 +488,11 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .lightbox {
+    animation: none;
+    transition: none;
+  }
+
+  .lightbox__frame {
     animation: none;
   }
 }
