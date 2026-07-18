@@ -38,6 +38,43 @@
   margin-bottom: clamp(1.5rem, 4vw, 2rem);
 }
 
+.contact-copy__labels {
+  display: inline-grid;
+  text-align: center;
+  /* masked rise: labels travel out of view and get clipped, like the
+     site's mask-rise titles; the margin protects descenders at rest */
+  overflow: clip;
+  overflow-clip-margin: 0.1em;
+}
+
+.contact-copy__label {
+  grid-area: 1 / 1; /* stacked: button width = widest label, always */
+  transition:
+    transform 240ms var(--ease-out-expo),
+    opacity 240ms ease;
+}
+
+.contact-copy__label--done {
+  opacity: 0;
+  transform: translateY(0.55em);
+}
+
+.contact-copy.is-copied .contact-copy__label--idle {
+  opacity: 0;
+  transform: translateY(-0.55em);
+}
+
+.contact-copy.is-copied .contact-copy__label--done {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-copy__label {
+    transition: none; /* instant swap — today's behavior */
+  }
+}
+
 /* Mailto silently does nothing for webmail users, so the label flips to
    confirm the copy actually landed before settling back. */
 .contact-copy.is-copied {

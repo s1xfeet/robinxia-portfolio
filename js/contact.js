@@ -41,6 +41,7 @@ async function copyEmail() {
 export function initContact() {
   const button = document.getElementById("contact-copy");
   if (!button) return;
+  const status = document.getElementById("contact-copy-status");
 
   let resetTimer = null;
 
@@ -49,11 +50,11 @@ export function initContact() {
     if (!ok) return; // mailto link remains the fallback path
 
     clearTimeout(resetTimer);
-    button.textContent = COPIED_LABEL;
     button.classList.add("is-copied");
+    if (status) status.textContent = COPIED_LABEL;
     resetTimer = setTimeout(() => {
-      button.textContent = DEFAULT_LABEL;
       button.classList.remove("is-copied");
+      if (status) status.textContent = DEFAULT_LABEL;
     }, RESET_DELAY_MS);
   });
 }

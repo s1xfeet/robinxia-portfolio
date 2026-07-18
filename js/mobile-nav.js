@@ -9,6 +9,7 @@ export function initMobileNav() {
   if (!toggle || !overlay) return;
 
   let isOpen = false;
+  let hideTimer = 0;
 
   // queried live so it stays correct if the link list ever changes
   function focusableElements() {
@@ -39,6 +40,9 @@ export function initMobileNav() {
 
   function open() {
     isOpen = true;
+    clearTimeout(hideTimer);               // reopen during a fade must win
+    overlay.classList.remove("is-closing");
+    overlay.removeAttribute("inert");
     overlay.removeAttribute("hidden");
     toggle.setAttribute("aria-expanded", "true");
     toggle.textContent = "Close";
@@ -49,7 +53,15 @@ export function initMobileNav() {
   function close({ returnFocus = false } = {}) {
     if (!isOpen) return;
     isOpen = false;
-    overlay.setAttribute("hidden", "");
+    // Exit dissolve, mirroring the lightbox (150ms CSS fade, 180ms removal).
+    // `hidden` is deferred so the fade can play; inert blocks focus/AT/hits
+    // immediately. Everything else stays instant — state must lead pixels.
+    overlay.classList.add("is-closing");
+    overlay.setAttribute("inert", "");
+    hideTimer = window.setTimeout(() => {
+      overlay.setAttribute("hidden", "");
+      overlay.classList.remove("is-closing");
+    }, 180);
     toggle.setAttribute("aria-expanded", "false");
     toggle.textContent = "Menu";
     document.documentElement.style.removeProperty("overflow");

@@ -105,6 +105,18 @@ a {
   color: var(--color-text-dim);
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .skip-link {
   position: absolute;
   top: -100%;
@@ -143,13 +155,18 @@ a {
   transition:
     background-color var(--duration-fast) ease,
     border-color var(--duration-fast) ease,
-    color var(--duration-fast) ease;
+    color var(--duration-fast) ease,
+    transform 140ms var(--ease-out-expo);
 }
 
 .btn:hover {
   background: var(--color-rec);
   border-color: var(--color-rec);
   color: oklch(98% 0 0);
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn--rec {
@@ -282,10 +299,16 @@ a {
      over near-black, which reads as smudged text behind the menu */
   background: var(--color-surface);
   border-top: 1px solid var(--color-hairline);
+  transition: opacity 150ms ease;
 }
 
 .mobile-nav[hidden] {
   display: none;
+}
+
+.mobile-nav.is-closing {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .mobile-nav__list {
@@ -359,6 +382,10 @@ a {
     opacity: 1;
     transform: none;
     animation: none;
+  }
+
+  .mobile-nav.is-closing {
+    transition: none;
   }
 }
 
@@ -477,13 +504,20 @@ a {
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
-  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+  transition:
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform 140ms var(--ease-out-expo);
 }
 
 .lightbox__close:hover,
 .lightbox__close:focus-visible {
   border-color: var(--color-rec);
   color: var(--color-rec);
+}
+
+.lightbox__close:active {
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -494,5 +528,10 @@ a {
 
   .lightbox__frame {
     animation: none;
+  }
+
+  .btn:active,
+  .lightbox__close:active {
+    transform: none;
   }
 }

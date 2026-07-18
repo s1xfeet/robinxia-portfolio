@@ -574,6 +574,19 @@
     transform: scale(1.1);
     filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55)) brightness(1.18);
   }
+
+  /* Press dip. 1.03, not 0.97: hover holds the button at scale(1.1), so
+     the press is a relative dip from there. The full transition list is
+     re-declared so the press lands in 140ms while filter and the delayed
+     opacity entrance keep their exact current behavior; on release the
+     base 320ms list takes back over — fast in, eased out. */
+  .hero-play:active {
+    transform: scale(1.03);
+    transition:
+      transform 140ms var(--ease-out-expo),
+      filter 320ms ease,
+      opacity 600ms ease 700ms;
+  }
 }
 
 .hero-play:focus-visible {
@@ -713,7 +726,8 @@
   }
 
   .hero-play:hover,
-  .hero-play:focus-visible {
+  .hero-play:focus-visible,
+  .hero-play:active {
     transform: none;
   }
 }
