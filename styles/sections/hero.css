@@ -482,6 +482,12 @@
   line-height: 1.9;
 }
 
+/* The AI-specialist line is the newest, most differentiating claim, so the
+   label rides the timecode-amber accent to catch the eye scanning the HUD. */
+.hero-meta__ai {
+  color: var(--color-tc);
+}
+
 .hero-statement {
   font-size: var(--text-hero);
   text-transform: uppercase;
