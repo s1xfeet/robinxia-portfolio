@@ -5,47 +5,47 @@
 //   assets/wall/. To refresh, re-run the clip pipeline and keep the same names.
 // href: where the tile points. A YouTube video URL opens in the lightbox
 //   (js/lightbox.js). A "#section" scrolls in-page. Anything else opens in a tab.
-// views: raw platform view count, fetched via yt-dlp 2026-08-24. Tiles render
+// views: raw platform view count, fetched via yt-dlp 2026-09-07. Tiles render
 //   a "▸ N" line only at 100K+ (wall.js) so the badge appears where it brags;
 //   refresh by re-running the fetch and updating these numbers.
 export const WALL_ROWS = [
   {
     speed: 80,
     items: [
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/CgJolSvDO5g", views: 205860, src: "assets/wall/jack1.mp4", poster: "assets/wall/jack1.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/W9j0dezbjOw", views: 83597, src: "assets/wall/jack2.mp4", poster: "assets/wall/jack2.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/ehmWKL0nH5g", views: 1075700, src: "assets/wall/jack3.mp4", poster: "assets/wall/jack3.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/a59gdEbij3o", views: 270110, src: "assets/wall/jack4.mp4", poster: "assets/wall/jack4.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/USWDz5vG7lg", views: 90479, src: "assets/wall/jack5.mp4", poster: "assets/wall/jack5.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/-a7hFbNbuDE", views: 61105, src: "assets/wall/jack6.mp4", poster: "assets/wall/jack6.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/PgWWIpsRKkg", views: 48957, src: "assets/wall/jack7.mp4", poster: "assets/wall/jack7.jpg" },
-      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/wvVJzNjqlsY", views: 39176, src: "assets/wall/jack8.mp4", poster: "assets/wall/jack8.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/CgJolSvDO5g", views: 206109, src: "assets/wall/jack1.mp4", poster: "assets/wall/jack1.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/W9j0dezbjOw", views: 84010, src: "assets/wall/jack2.mp4", poster: "assets/wall/jack2.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/ehmWKL0nH5g", views: 1091233, src: "assets/wall/jack3.mp4", poster: "assets/wall/jack3.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/a59gdEbij3o", views: 273055, src: "assets/wall/jack4.mp4", poster: "assets/wall/jack4.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/USWDz5vG7lg", views: 92217, src: "assets/wall/jack5.mp4", poster: "assets/wall/jack5.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/-a7hFbNbuDE", views: 63684, src: "assets/wall/jack6.mp4", poster: "assets/wall/jack6.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/PgWWIpsRKkg", views: 49778, src: "assets/wall/jack7.mp4", poster: "assets/wall/jack7.jpg" },
+      { client: "jackdoesskits", label: "Sketch Comedy", kind: "wide", href: "https://youtu.be/wvVJzNjqlsY", views: 39779, src: "assets/wall/jack8.mp4", poster: "assets/wall/jack8.jpg" },
     ],
   },
   {
     speed: 95,
     items: [
-      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/jDOf92K3HIo", views: 3509221, src: "assets/wall/nk1.mp4", poster: "assets/wall/nk1.jpg" },
-      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/dhW3FK4ev1U", views: 213484, src: "assets/wall/derrek1.mp4", poster: "assets/wall/derrek1.jpg" },
-      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/e-yDemEIubk", views: 1388938, src: "assets/wall/nk2.mp4", poster: "assets/wall/nk2.jpg" },
-      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/YmbGp5RKQXo", views: 143652, src: "assets/wall/derrek2.mp4", poster: "assets/wall/derrek2.jpg" },
-      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/51Nbs1EbDqg", views: 11734778, src: "assets/wall/nk3.mp4", poster: "assets/wall/nk3.jpg" },
-      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/0l3RMSXLIJg", views: 92135, src: "assets/wall/derrek3.mp4", poster: "assets/wall/derrek3.jpg" },
-      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/PLg02fg-Ye4", views: 226294, src: "assets/wall/nk4.mp4", poster: "assets/wall/nk4.jpg" },
+      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/jDOf92K3HIo", views: 3520958, src: "assets/wall/nk1.mp4", poster: "assets/wall/nk1.jpg" },
+      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/dhW3FK4ev1U", views: 213494, src: "assets/wall/derrek1.mp4", poster: "assets/wall/derrek1.jpg" },
+      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/e-yDemEIubk", views: 1445262, src: "assets/wall/nk2.mp4", poster: "assets/wall/nk2.jpg" },
+      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/YmbGp5RKQXo", views: 143668, src: "assets/wall/derrek2.mp4", poster: "assets/wall/derrek2.jpg" },
+      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/51Nbs1EbDqg", views: 11745280, src: "assets/wall/nk3.mp4", poster: "assets/wall/nk3.jpg" },
+      { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/0l3RMSXLIJg", views: 92136, src: "assets/wall/derrek3.mp4", poster: "assets/wall/derrek3.jpg" },
+      { client: "NK", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/PLg02fg-Ye4", views: 230754, src: "assets/wall/nk4.mp4", poster: "assets/wall/nk4.jpg" },
       { client: "100T Derrek", label: "Gaming Highlights", kind: "tall", href: "https://www.youtube.com/shorts/hsHD0cj7gTk", views: 56117, src: "assets/wall/derrek4.mp4", poster: "assets/wall/derrek4.jpg" },
     ],
   },
   {
     speed: 70,
     items: [
-      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "wide", href: "https://youtu.be/OLn2KItqA4A", views: 24780, src: "assets/wall/zacklong.mp4", poster: "assets/wall/zacklong.jpg" },
-      { client: "Tim", label: "Long form Explainers", kind: "wide", href: "https://youtu.be/yFxEGkT_pfw", views: 156068, src: "assets/wall/tim1.mp4", poster: "assets/wall/tim1.jpg" },
-      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/QnKB1fic6_c", views: 93976, src: "assets/wall/zackloud.mp4", poster: "assets/wall/zackloud.jpg" },
-      { client: "Colby", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/TbaPqq0dA7g", views: 2746503, src: "assets/wall/colby1.mp4", poster: "assets/wall/colby1.jpg" },
-      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/LwMm_cd6ojk", views: 6542686, src: "assets/wall/zack32.mp4", poster: "assets/wall/zack32.jpg" },
-      { client: "Tim", label: "Long form Explainers", kind: "wide", href: "https://youtu.be/Y4YcJX-6m6E", views: 104124, src: "assets/wall/tim2.mp4", poster: "assets/wall/tim2.jpg" },
+      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "wide", href: "https://youtu.be/OLn2KItqA4A", views: 24783, src: "assets/wall/zacklong.mp4", poster: "assets/wall/zacklong.jpg" },
+      { client: "Tim", label: "Long form Explainers", kind: "wide", href: "https://youtu.be/yFxEGkT_pfw", views: 162857, src: "assets/wall/tim1.mp4", poster: "assets/wall/tim1.jpg" },
+      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/QnKB1fic6_c", views: 94047, src: "assets/wall/zackloud.mp4", poster: "assets/wall/zackloud.jpg" },
+      { client: "Colby", label: "Street Interviews", kind: "tall", href: "https://www.youtube.com/shorts/TbaPqq0dA7g", views: 2746582, src: "assets/wall/colby1.mp4", poster: "assets/wall/colby1.jpg" },
+      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/LwMm_cd6ojk", views: 6669618, src: "assets/wall/zack32.mp4", poster: "assets/wall/zack32.jpg" },
+      { client: "Tim", label: "Long form Explainers", kind: "wide", href: "https://youtu.be/Y4YcJX-6m6E", views: 106152, src: "assets/wall/tim2.mp4", poster: "assets/wall/tim2.jpg" },
       { client: "Colby", label: "Street Interviews", kind: "tall", href: "https://www.tiktok.com/@colbymartel/video/7493629484642405663", views: 3300000, src: "assets/wall/colby2.mp4", poster: "assets/wall/colby2.jpg" },
-      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/BKCSxsrmf9E", views: 1392492, src: "assets/wall/zackwin10.mp4", poster: "assets/wall/zackwin10.jpg" },
+      { client: "Zack Shutt", label: "Shortform scripts & editing", kind: "tall", href: "https://www.youtube.com/shorts/BKCSxsrmf9E", views: 1392725, src: "assets/wall/zackwin10.mp4", poster: "assets/wall/zackwin10.jpg" },
       { client: "The Writing", label: "Video scripts", kind: "tall", href: "#writing", src: "assets/wall/zack32.mp4", poster: "assets/wall/zack32.jpg" },
       { client: "Related Shorts Changer", label: "Chrome extension", kind: "wide", href: "#builds", src: "assets/bg/rsc.mp4", poster: "assets/bg/rsc.jpg" },
     ],
